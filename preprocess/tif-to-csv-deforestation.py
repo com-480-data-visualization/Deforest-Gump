@@ -3,6 +3,7 @@ import reverse_geocoder as rg
 import rasterio
 import numpy as np
 import pandas as pd
+import pycountry
 
 cause = {
     0.0: "No loss",
@@ -43,10 +44,23 @@ def main(tif_input, output_csv):
             "lon": xs,
             "lat": ys,
             "value": data.ravel(),
-            "country": [c["cc"] for c in countries],
+            "country_code": [c["cc"] for c in countries],
         }
     )
-
+    df["country_name"] = df["country_code"].apply(
+        lambda code: (
+            pycountry.countries.get(alpha_2=code).name
+            if pycountry.countries.get(alpha_2=code)
+            else None
+        )
+    )
+    df["country_code_3"] = df["country_code"].apply(
+        lambda code: (
+            pycountry.countries.get(alpha_2=code).alpha_3
+            if pycountry.countries.get(alpha_2=code)
+            else None
+        )
+    )
     # Drop rows where value is NaN (was < 0)
     df = df.dropna(subset=["value"])
 
