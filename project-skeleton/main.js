@@ -71,7 +71,7 @@ function loadMap() {
 					renderer:renderer,
 	        radius:getRadius(d.capacity),
 	        fillColor: getColor(d.fuel),
-	        color: 'red',
+	        color: 'black',
 	        weight: 1,
 	        fillOpacity: 0.7
 	      })
