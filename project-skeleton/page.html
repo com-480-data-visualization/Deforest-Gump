@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deforest Gump</title>
+  <meta name="author" content="Simon Barras, Oliver Daoud, Phuc-hung Truong">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="lib/leaflet.css" />
+</head>
+
+<body>
+  <header>
+    Deforest Gump
+  </header>
+
+  <main>
+    <!-- Top row -->
+    <section class="top-row">
+      <div class="main-svg" id="map"></div>
+      <div class="side-panel">
+				<h3>Fuel Type</h3>
+			  <div class="legend">
+			    <div class="legend-item"><span class="dot" style="background:black"></span> Coal</div>
+			    <div class="legend-item"><span class="dot" style="background:orange"></span> Gas</div>
+			    <div class="legend-item"><span class="dot" style="background:blue"></span> Hydro</div>
+			    <div class="legend-item"><span class="dot" style="background:yellow"></span> Solar</div>
+			    <div class="legend-item"><span class="dot" style="background:green"></span> Wind</div>
+			    <div class="legend-item"><span class="dot" style="background:purple"></span> Nuclear</div>
+			    <div class="legend-item"><span class="dot" style="background:gray"></span> Other</div>
+			  </div>
+      </div>
+    </section>
+
+    <!-- Bottom row -->
+    <section class="bottom-row">
+      <div class="plot">
+        <svg id="plot-1">
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Plot 1</text>
+        </svg>
+      </div>
+      <div class="plot">
+        <svg id="plot-2">
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">Plot 2</text>
+        </svg>
+      </div>
+    </section>
+  </main>
+
+  <!-- JS -->
+  <script src="lib/leaflet.js"></script>
+  <script src="lib/d3.min.js"></script>
+  <script src="lib/topojson.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
