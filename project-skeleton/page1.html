@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deforest Gump</title>
+  <meta name="author" content="Simon Barras, Oliver Daoud, Phuc-hung Truong">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="lib/leaflet.css" />
+
+  <style>
+    /* ── Design tokens ──────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #f2f5f2;
+      --surface:     #ffffff;
+      --border:      #dde5dd;
+      --header-bg:   #1b3d2a;
+      --header-text: #ffffff;
+      --accent:      #2d6a4f;
+      --accent-dim:  #e8f3ed;
+      --text:        #1c2e1c;
+      --text-muted:  #6b7f6b;
+      --shadow-sm:   0 1px 4px rgba(0,0,0,.08);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+      --radius:      10px;
+      --radius-sm:   6px;
+    }
+
+    /* ── Reset / base ────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────────── */
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      font-weight: 400;
+    }
+
+    /* ── Controls bar ────────────────────────────────────────────────────────── */
+    #controls {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      align-items: flex-end;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .control-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+    }
+
+    /* Fuel chips */
+    .fuel-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .fuel-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+      color: var(--text-muted);
+    }
+
+    .fuel-chip input { display: none; }
+
+    .fuel-chip .chip-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .fuel-chip.checked {
+      color: var(--text);
+      border-color: transparent;
+      background: var(--accent-dim);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .fuel-chip:hover { border-color: var(--accent); }
+
+    /* Country select */
+    #country-select {
+      font-family: inherit;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.6rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      min-width: 180px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #country-select:focus { border-color: var(--accent); }
+
+    /* Deforestation toggle */
+    #deforest-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.42rem 1rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    #deforest-toggle .toggle-icon {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    #deforest-toggle .toggle-pill {
+      width: 32px;
+      height: 17px;
+      border-radius: 999px;
+      background: #ccc;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    #deforest-toggle .toggle-pill::after {
+      content: '';
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: white;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    #deforest-toggle.active {
+      border-color: #52b788;
+      color: #1b4332;
+      background: #d8f3dc;
+    }
+
+    #deforest-toggle.active .toggle-pill { background: #52b788; }
+    #deforest-toggle.active .toggle-pill::after { left: 17px; }
+
+    /* Loading indicator */
+    #loading {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(27, 61, 42, 0.55);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    #loading.visible { display: flex; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Main layout ─────────────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .top-row {
+      display: flex;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    /* ── Map ─────────────────────────────────────────────────────────────────── */
+    #map-wrapper {
+      flex: 3;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border);
+    }
+
+    #map {
+      height: 480px;
+      width: 100%;
+    }
+
+    /* ── Side panel ──────────────────────────────────────────────────────────── */
+    #side-panel {
+      flex: 1;
+      min-width: 210px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-card h3 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.65rem;
+    }
+
+    /* Detail content */
+    #detail-content {
+      font-size: 0.85rem;
+    }
+
+    .detail-placeholder {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .detail-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-key {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .detail-val {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .detail-fuel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Legend */
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Bottom charts ───────────────────────────────────────────────────────── */
+    .bottom-row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .chart-card {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem 0.5rem;
+      box-shadow: var(--shadow-sm);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .chart-card svg {
+      flex: 1;
+      width: 100%;
+      display: block;
+    }
+
+    .chart-card svg path.curve {
+      stroke: var(--accent);
+      stroke-width: 1.5px;
+      fill: none;
+    }
+
+    .chart-card svg text {
+      font-family: 'Inter', sans-serif;
+      font-size: 7px;
+      fill: var(--text-muted);
+    }
+
+    .chart-card svg text.tick {
+      font-size: 5.5px;
+      fill: var(--text-muted);
+    }
+
+    .chart-card svg text.axis-label {
+      font-size: 6px;
+      fill: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .placeholder-chart {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading overlay -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Loading power plant data…</span>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>Deforest Gump</h1>
+    <p>Global power plants &amp; deforestation — EPFL COM-480</p>
+  </header>
+
+  <!-- Filter Controls -->
+  <div id="controls">
+
+    <div class="control-group">
+      <span class="control-label">Fuel Type</span>
+      <div class="fuel-chips" id="fuel-chips">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="control-label">Country</span>
+      <select id="country-select">
+        <option value="ALL">All countries</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <span class="control-label">Overlay</span>
+      <button id="deforest-toggle">
+        <span class="toggle-icon">🌳</span>
+        Deforestation
+        <span class="toggle-pill"></span>
+      </button>
+    </div>
+
+  </div>
+
+  <main>
+    <!-- Top row -->
+    <section class="top-row">
+
+      <!-- Map -->
+      <div id="map-wrapper">
+        <div id="map"></div>
+      </div>
+
+      <!-- Side panel -->
+      <div id="side-panel">
+
+        <!-- Detail card -->
+        <div class="panel-card" style="flex:1">
+          <h3>Plant Details</h3>
+          <div id="detail-content">
+            <p class="detail-placeholder">Hover or click a marker on the map to see details about a power plant.</p>
+          </div>
+        </div>
+
+        <!-- Legend card -->
+        <div class="panel-card">
+          <h3>Fuel Type Legend</h3>
+          <div class="legend-items" id="legend">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Bottom charts -->
+    <section class="bottom-row">
+
+      <div class="chart-card">
+        <div class="chart-title">Avg. Capacity by Fuel Type — current view</div>
+        <svg id="plot-1" viewBox="0 0 220 100" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Chart 2 — placeholder</div>
+        <div class="placeholder-chart">Coming soon</div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="lib/leaflet.js"></script>
+  <script src="lib/d3.min.js"></script>
+  <script src="lib/topojson.min.js"></script>
+
+  <script>
+    /* ── Constants ────────────────────────────────────────────────────────────── */
+
+    const FUEL_COLORS = {
+      Coal:    '#2c2c2c',
+      Gas:     '#e67e22',
+      Hydro:   '#2980b9',
+      Solar:   '#f1c40f',
+      Wind:    '#27ae60',
+      Nuclear: '#8e44ad',
+      Other:   '#95a5a6',
+    };
+
+    const FUELS = Object.keys(FUEL_COLORS);
+
+    const normalizeFuel = raw => FUELS.includes(raw) ? raw : 'Other';
+
+    const getRadius = cap => (!cap || cap <= 0) ? 3 : Math.max(Math.log(cap + 1), 2);
+
+    /* ── Helpers ──────────────────────────────────────────────────────────────── */
+
+    function whenDocumentLoaded(fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+      else fn();
+    }
+
+    const loading = document.getElementById('loading');
+    const showLoading = () => loading.classList.add('visible');
+    const hideLoading = () => loading.classList.remove('visible');
+
+    /* ── Legend ───────────────────────────────────────────────────────────────── */
+
+    function buildLegend() {
+      const el = document.getElementById('legend');
+      FUELS.forEach(fuel => {
+        el.insertAdjacentHTML('beforeend', `
+          <div class="legend-item">
+            <span class="legend-dot" style="background:${FUEL_COLORS[fuel]}"></span>
+            <span>${fuel}</span>
+          </div>`);
+      });
+    }
+
+    /* ── Fuel chips ───────────────────────────────────────────────────────────── */
+
+    function buildFuelChips(onChange) {
+      const container = document.getElementById('fuel-chips');
+      FUELS.forEach(fuel => {
+        const chip = document.createElement('label');
+        chip.className = 'fuel-chip checked';
+        chip.innerHTML = `
+          <input type="checkbox" value="${fuel}" checked>
+          <span class="chip-dot" style="background:${FUEL_COLORS[fuel]}"></span>
+          ${fuel}`;
+        chip.querySelector('input').addEventListener('change', e => {
+          chip.classList.toggle('checked', e.target.checked);
+          onChange();
+        });
+        container.appendChild(chip);
+      });
+    }
+
+    const getActiveFuels = () =>
+      [...document.querySelectorAll('#fuel-chips input:checked')].map(el => el.value);
+
+    /* ── Country select ───────────────────────────────────────────────────────── */
+
+    function buildCountrySelect(countries, onChange) {
+      const sel = document.getElementById('country-select');
+      [...countries].sort().forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener('change', onChange);
+    }
+
+    /* ── Detail Panel ─────────────────────────────────────────────────────────── */
+
+    function showDetail(plant) {
+      const fuel = normalizeFuel(plant.fuel);
+      document.getElementById('detail-content').innerHTML = `
+        <div class="detail-name">${plant.name}</div>
+        <div class="detail-row">
+          <span class="detail-key">Country</span>
+          <span class="detail-val">${plant.country}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Fuel</span>
+          <span class="detail-val">
+            <span class="detail-fuel-dot" style="background:${FUEL_COLORS[fuel]}"></span>
+            ${fuel}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Capacity</span>
+          <span class="detail-val">${plant.capacity > 0 ? plant.capacity.toLocaleString() + ' MW' : 'N/A'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Coordinates</span>
+          <span class="detail-val">${plant.lat.toFixed(2)}°, ${plant.lng.toFixed(2)}°</span>
+        </div>`;
+    }
+
+    function clearDetail() {
+      document.getElementById('detail-content').innerHTML =
+        '<p class="detail-placeholder">Hover or click a marker on the map to see details about a power plant.</p>';
+    }
+
+    /* ── Deforestation Overlay ────────────────────────────────────────────────── */
+
+    let deforestLayer = null;
+    let deforestVisible = false;
+
+    const DEFOREST_COLORS = {
+      1: '#b5179e', // commodity-driven
+      2: '#f77f00', // shifting agriculture
+      3: '#4cc9f0', // forestry
+      4: '#ffba08', // wildfire
+      5: '#3a86ff', // urbanization
+    };
+
+    function buildDeforestToggle(map) {
+      const btn = document.getElementById('deforest-toggle');
+      btn.addEventListener('click', () => {
+        deforestVisible = !deforestVisible;
+        btn.classList.toggle('active', deforestVisible);
+        if (deforestVisible) loadDeforestLayer(map);
+        else if (deforestLayer) { map.removeLayer(deforestLayer); deforestLayer = null; }
+      });
+    }
+
+    function loadDeforestLayer(map) {
+      fetch('data/8-deforestation.geojson')
+        .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+        .then(geojson => {
+          deforestLayer = L.geoJSON(geojson, {
+            style: f => ({
+              fillColor: DEFOREST_COLORS[f.properties.driver] ?? '#ccc',
+              fillOpacity: 0.45,
+              weight: 0,
+            }),
+          }).addTo(map);
+        })
+        .catch(err => {
+          console.warn('Deforestation layer not available:', err.message);
+          deforestVisible = false;
+          document.getElementById('deforest-toggle').classList.remove('active');
+          alert('Deforestation GeoJSON not yet generated. Run the preprocessing script first.');
+        });
+    }
+
+    /* ── EnergyHistogram ──────────────────────────────────────────────────────── */
+
+    class EnergyHistogram {
+      constructor(id, data) {
+        this.data = data;
+        this.svg  = d3.select('#' + id);
+        const vb  = this.svg.node().viewBox.baseVal;
+        const m   = { top: 8, right: 8, bottom: 26, left: 30 };
+        const W   = vb.width  - m.left - m.right;
+        const H   = vb.height - m.top  - m.bottom;
+
+        this.g  = this.svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
+        this.xS = d3.scaleLinear().domain([0, FUELS.length - 1]).range([0, W]);
+        this.yS = d3.scaleLinear().domain([0, 1]).range([H, 0]);
+        this.H  = H; this.W = W;
+
+        // X label
+        this.svg.append('text').attr('class', 'axis-label')
+          .attr('x', m.left + W / 2).attr('y', m.top + H + 22)
+          .attr('text-anchor', 'middle').text('Fuel type');
+
+        // Y label
+        this.svg.append('text').attr('class', 'axis-label')
+          .attr('transform', 'rotate(-90)')
+          .attr('x', -(m.top + H / 2)).attr('y', 10)
+          .attr('text-anchor', 'middle').text('Avg capacity (norm.)');
+
+        // Gridlines
+        [0, 0.25, 0.5, 0.75, 1].forEach(v => {
+          this.g.append('line')
+            .attr('x1', 0).attr('x2', W)
+            .attr('y1', this.yS(v)).attr('y2', this.yS(v))
+            .attr('stroke', '#dde5dd').attr('stroke-width', 0.5);
+        });
+
+        // X ticks
+        FUELS.forEach((f, i) => {
+          this.g.append('text').attr('class', 'tick')
+            .attr('x', this.xS(i)).attr('y', H + 8)
+            .attr('text-anchor', 'end')
+            .attr('transform', `rotate(-40, ${this.xS(i)}, ${H + 8})`)
+            .text(f);
+        });
+
+        this._line = d3.line()
+          .x((_, i) => this.xS(i))
+          .y(d => this.yS(d))
+          .curve(d3.curveCatmullRom.alpha(0.5));
+      }
+
+      update(min_lat, max_lat, min_lng, max_lng, activeFuels, activeCountry) {
+        const sums = {}, counts = {};
+        FUELS.forEach(f => { sums[f] = 0; counts[f] = 0; });
+
+        this.data.forEach(d => {
+          if (d.lat < min_lat || d.lat > max_lat || d.lng < min_lng || d.lng > max_lng) return;
+          if (activeCountry !== 'ALL' && d.country !== activeCountry) return;
+          const fuel = normalizeFuel(d.fuel);
+          if (!activeFuels.includes(fuel)) return;
+          sums[fuel] += d.capacity || 0;
+          counts[fuel]++;
+        });
+
+        let hist = FUELS.map(f => counts[f] === 0 ? 0 : sums[f] / counts[f]);
+        const mx = Math.max(...hist, 0);
+        if (mx > 0) hist = hist.map(v => v / mx);
+
+        // Dots
+        const dots = this.g.selectAll('circle.data-dot').data(hist);
+        dots.enter().append('circle').attr('class', 'data-dot')
+          .attr('r', 2).attr('fill', 'white').attr('stroke-width', 1.2)
+          .merge(dots)
+          .attr('cx', (_, i) => this.xS(i))
+          .attr('cy', d => this.yS(d))
+          .attr('stroke', (_, i) => FUEL_COLORS[FUELS[i]]);
+        dots.exit().remove();
+
+        // Line
+        const paths = this.g.selectAll('path.curve').data([hist]);
+        paths.enter().append('path').attr('class', 'curve')
+          .merge(paths).attr('d', this._line(hist));
+        paths.exit().remove();
+      }
+    }
+
+    /* ── Map markers ──────────────────────────────────────────────────────────── */
+
+    function buildMarkers(map, data, renderer) {
+      const markers = [];
+      data.forEach(d => {
+        if (isNaN(d.lat) || isNaN(d.lng)) return;
+        const m = L.circleMarker([d.lat, d.lng], {
+          renderer,
+          radius:      getRadius(d.capacity),
+          fillColor:   FUEL_COLORS[normalizeFuel(d.fuel)],
+          color:       'rgba(255,255,255,0.5)',
+          weight:      0.8,
+          fillOpacity: 0.75,
+        });
+        m.on('click',     () => showDetail(d));
+        m.on('mouseover', () => showDetail(d));
+        m.on('mouseout',  clearDetail);
+        m.plantData = d;
+        m.addTo(map);
+        markers.push(m);
+      });
+      return markers;
+    }
+
+    function applyFilters(markers, activeFuels, activeCountry) {
+      markers.forEach(m => {
+        const { fuel, country } = m.plantData;
+        const show = activeFuels.includes(normalizeFuel(fuel)) &&
+                     (activeCountry === 'ALL' || country === activeCountry);
+        m.setStyle(show
+          ? { opacity: 1, fillOpacity: 0.75 }
+          : { opacity: 0, fillOpacity: 0 });
+        m.setInteractive(show);
+      });
+    }
+
+    /* ── Entry point ──────────────────────────────────────────────────────────── */
+
+    whenDocumentLoaded(() => {
+      buildLegend();
+
+      const map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
+      map.setMinZoom(2);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
+
+      buildDeforestToggle(map);
+
+      const renderer = L.canvas({ padding: 0.5 });
+
+      showLoading();
+
+      d3.csv('data/4-power-plants.csv', d => ({
+        name:     d.name,
+        country:  d.country_long,
+        fuel:     d.primary_fuel,
+        capacity: +d.capacity_mw,
+        lat:      +d.latitude,
+        lng:      +d.longitude,
+      })).then(data => {
+        hideLoading();
+
+        const countries = new Set(data.map(d => d.country).filter(Boolean));
+        buildCountrySelect(countries, onFilterChange);
+        buildFuelChips(onFilterChange);
+
+        const markers  = buildMarkers(map, data, renderer);
+        const histogram = new EnergyHistogram('plot-1', data);
+
+        function onFilterChange() {
+          const fuels   = getActiveFuels();
+          const country = document.getElementById('country-select').value;
+          applyFilters(markers, fuels, country);
+          refreshHistogram();
+        }
+
+        function refreshHistogram() {
+          const b       = map.getBounds();
+          const fuels   = getActiveFuels();
+          const country = document.getElementById('country-select').value;
+          histogram.update(b.getSouth(), b.getNorth(), b.getWest(), b.getEast(), fuels, country);
+        }
+
+        map.on('moveend', refreshHistogram);
+        map.fire('moveend');
+
+      }).catch(() => hideLoading());
+    });
+  </script>
+</body>
+</html>
