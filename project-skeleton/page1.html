@@ -500,7 +500,7 @@
     <section class="bottom-row">
 
       <div class="chart-card">
-        <div class="chart-title">Avg. Capacity by Fuel Type — current view</div>
+        <div class="chart-title">Total Capacity by Fuel Type — current view</div>
         <svg id="plot-1" viewBox="0 0 220 100" preserveAspectRatio="xMidYMid meet"></svg>
       </div>
 
@@ -731,7 +731,10 @@
           counts[fuel]++;
         });
 
-        let hist = FUELS.map(f => counts[f] === 0 ? 0 : sums[f] / counts[f]);
+        //let hist = FUELS.map(f => counts[f] === 0 ? 0 : sums[f] / counts[f]);
+
+        //do not compute avg but just absolute power distrib
+        let hist = FUELS.map(f => counts[f] === 0 ? 0 : sums[f] );
         const mx = Math.max(...hist, 0);
         if (mx > 0) hist = hist.map(v => v / mx);
 
