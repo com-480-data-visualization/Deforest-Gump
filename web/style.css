@@ -134,7 +134,14 @@ header p {
 #country-select:focus { border-color: var(--accent); }
 
 /* Deforestation toggle */
-#deforest-toggle {
+.toggle-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+#deforest-toggle,
+#population-toggle {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -150,12 +157,14 @@ header p {
   transition: all 0.2s;
 }
 
-#deforest-toggle .toggle-icon {
+#deforest-toggle .toggle-icon,
+#population-toggle .toggle-icon {
   font-size: 1rem;
   line-height: 1;
 }
 
-#deforest-toggle .toggle-pill {
+#deforest-toggle .toggle-pill,
+#population-toggle .toggle-pill {
   width: 32px;
   height: 17px;
   border-radius: 999px;
@@ -165,7 +174,8 @@ header p {
   flex-shrink: 0;
 }
 
-#deforest-toggle .toggle-pill::after {
+#deforest-toggle .toggle-pill::after,
+#population-toggle .toggle-pill::after {
   content: '';
   position: absolute;
   width: 13px;
@@ -186,6 +196,15 @@ header p {
 
 #deforest-toggle.active .toggle-pill { background: #52b788; }
 #deforest-toggle.active .toggle-pill::after { left: 17px; }
+
+#population-toggle.active {
+  border-color: #52b788;
+  color: #1b4332;
+  background: #d8f3dc;
+}
+
+#population-toggle.active .toggle-pill { background: #52b788; }
+#population-toggle.active .toggle-pill::after { left: 17px; }
 
 /* Loading indicator */
 #loading {
@@ -370,6 +389,20 @@ main {
   margin-bottom: 0.4rem;
 }
 
+.chart-total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+}
+
+.pie-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  text-align: center;
+}
+
 .chart-card svg {
   flex: 1;
   width: 100%;
@@ -407,6 +440,28 @@ main {
   color: var(--text-muted);
   font-size: 0.8rem;
   font-style: italic;
+}
+
+.chart-card--placeholder {
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed var(--border);
+  background: transparent;
+}
+
+.placeholder-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 2rem;
 }
 
 /* ── Toast notification ──────────────────────────────────────────────────── */

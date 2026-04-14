@@ -100,7 +100,7 @@ function buildCountrySelect(countries, onChange) {
 /* ── Detail Panel ─────────────────────────────────────────────────────────── */
 
 function showDetail(plant) {
-  const fuel = normalizeFuel(plant.fuel);
+  const fuelColor = normalizeFuel(plant.fuel);
   document.getElementById("detail-content").innerHTML = `
     <div class="detail-name">${escapeHtml(plant.name)}</div>
     <div class="detail-row">
@@ -110,8 +110,8 @@ function showDetail(plant) {
     <div class="detail-row">
       <span class="detail-key">Fuel</span>
       <span class="detail-val">
-        <span class="detail-fuel-dot" style="background:${FUEL_COLORS[fuel]}"></span>
-        ${escapeHtml(fuel)}
+        <span class="detail-fuel-dot" style="background:${FUEL_COLORS[fuelColor]}"></span>
+        ${escapeHtml(plant.fuel || "Unknown")}
       </span>
     </div>
     <div class="detail-row">
@@ -155,6 +155,15 @@ function buildDeforestToggle(map) {
   });
 }
 
+function buildPopulationToggle() {
+  const btn = document.getElementById("population-toggle");
+  btn.addEventListener("click", () => {
+    btn.classList.add("active");
+    showToast("Population layer not available. Wait for the milestone 3.");
+    setTimeout(() => btn.classList.remove("active"), 4000);
+  });
+}
+
 function loadDeforestLayer(map) {
   fetch("data/8-deforestation.geojson")
     .then((r) => {
@@ -185,17 +194,20 @@ class EnergyHistogram {
     this.data = data;
     this.svg = d3.select("#" + id);
     const vb = this.svg.node().viewBox.baseVal;
-    const m = { top: 8, right: 8, bottom: 26, left: 30 };
-    const W = vb.width - m.left - m.right;
-    const H = vb.height - m.top - m.bottom;
+    const m = { top: 8, right: 8, bottom: 40, left: 30 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+    const W = this.W,
+      H = this.H;
 
     this.g = this.svg
       .append("g")
       .attr("transform", `translate(${m.left},${m.top})`);
-    this.xS = d3
-      .scaleLinear()
-      .domain([0, FUELS.length - 1])
-      .range([0, W]);
+
+    // Grid group must be first child so it's always behind bars
+    this.gridGroup = this.g.append("g");
+
+    this.xS = d3.scaleBand().domain(FUELS).range([0, W]).padding(0.25);
     this.yS = d3.scaleLinear().domain([0, 1]).range([H, 0]);
 
     // X label
@@ -203,7 +215,7 @@ class EnergyHistogram {
       .append("text")
       .attr("class", "axis-label")
       .attr("x", m.left + W / 2)
-      .attr("y", m.top + H + 22)
+      .attr("y", m.top + H + 38)
       .attr("text-anchor", "middle")
       .text("Fuel type");
 
@@ -215,37 +227,32 @@ class EnergyHistogram {
       .attr("x", -(m.top + H / 2))
       .attr("y", 10)
       .attr("text-anchor", "middle")
-      .text("Avg capacity (norm.)");
+      .text("Avg capacity (MW)");
 
-    // Gridlines
-    [0, 0.25, 0.5, 0.75, 1].forEach((v) => {
-      this.g
-        .append("line")
-        .attr("x1", 0)
-        .attr("x2", W)
-        .attr("y1", this.yS(v))
-        .attr("y2", this.yS(v))
-        .attr("stroke", "#dde5dd")
-        .attr("stroke-width", 0.5);
-    });
+    // Hover label (hidden until mouseover)
+    this.hoverLabel = this.g
+      .append("text")
+      .attr("class", "bar-label")
+      .attr("text-anchor", "middle")
+      .attr("font-size", "9px")
+      .attr("fill", "#333")
+      .style("pointer-events", "none")
+      .attr("visibility", "hidden");
 
     // X ticks
-    FUELS.forEach((f, i) => {
+    FUELS.forEach((f) => {
       this.g
         .append("text")
         .attr("class", "tick")
-        .attr("x", this.xS(i))
+        .attr("x", this.xS(f) + this.xS.bandwidth() / 2)
         .attr("y", H + 8)
         .attr("text-anchor", "end")
-        .attr("transform", `rotate(-40, ${this.xS(i)}, ${H + 8})`)
+        .attr(
+          "transform",
+          `rotate(-40, ${this.xS(f) + this.xS.bandwidth() / 2}, ${H + 8})`,
+        )
         .text(f);
     });
-
-    this._line = d3
-      .line()
-      .x((_, i) => this.xS(i))
-      .y((d) => this.yS(d))
-      .curve(d3.curveCatmullRom.alpha(0.5));
   }
 
   update(min_lat, max_lat, min_lng, max_lng, activeFuels, activeCountry) {
@@ -271,34 +278,291 @@ class EnergyHistogram {
       counts[fuel]++;
     });
 
-    let hist = FUELS.map((f) => (counts[f] === 0 ? 0 : sums[f] / counts[f]));
-    const mx = Math.max(...hist, 0);
-    if (mx > 0) hist = hist.map((v) => v / mx);
+    const rawAvg = FUELS.map((f) =>
+      counts[f] === 0 ? 0 : sums[f] / counts[f],
+    );
+    const mx = Math.max(...rawAvg, 0);
 
-    // Dots
-    const dots = this.g.selectAll("circle.data-dot").data(hist);
-    dots
-      .enter()
-      .append("circle")
-      .attr("class", "data-dot")
-      .attr("r", 2)
-      .attr("fill", "white")
-      .attr("stroke-width", 1.2)
-      .merge(dots)
-      .attr("cx", (_, i) => this.xS(i))
-      .attr("cy", (d) => this.yS(d))
-      .attr("stroke", (_, i) => FUEL_COLORS[FUELS[i]]);
-    dots.exit().remove();
+    // Update Y scale to actual MW values
+    this.yS.domain([0, mx > 0 ? mx : 1]);
 
-    // Line
-    const paths = this.g.selectAll("path.curve").data([hist]);
-    paths
+    // Redraw Y gridlines + tick labels with MW values
+    const yTicks = this.yS.ticks(4);
+    const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
+    yLines
       .enter()
-      .append("path")
-      .attr("class", "curve")
-      .merge(paths)
-      .attr("d", this._line(hist));
-    paths.exit().remove();
+      .append("line")
+      .attr("class", "y-grid")
+      .merge(yLines)
+      .attr("x1", 0)
+      .attr("x2", this.W)
+      .attr("y1", (d) => this.yS(d))
+      .attr("y2", (d) => this.yS(d))
+      .attr("stroke", "#dde5dd")
+      .attr("stroke-width", 0.5);
+    yLines.exit().remove();
+
+    const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
+    yTickTexts
+      .enter()
+      .append("text")
+      .attr("class", "tick y-tick")
+      .merge(yTickTexts)
+      .attr("x", -4)
+      .attr("y", (d) => this.yS(d))
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
+      .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
+    yTickTexts.exit().remove();
+
+    const barData = FUELS.map((f, i) => ({ fuel: f, raw: rawAvg[i] }));
+    const hoverLabel = this.hoverLabel;
+    const xS = this.xS;
+    const yS = this.yS;
+    const H = this.H;
+
+    const bars = this.g.selectAll("rect.bar").data(barData);
+    bars
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .merge(bars)
+      .attr("x", (d) => xS(d.fuel))
+      .attr("width", xS.bandwidth())
+      .attr("y", (d) => yS(d.raw))
+      .attr("height", (d) => H - yS(d.raw))
+      .attr("fill", (d) => FUEL_COLORS[d.fuel])
+      .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
+      .on("mouseover", function (d) {
+        if (d.raw === 0) return;
+        hoverLabel
+          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
+          .attr("y", yS(d.raw) - 4)
+          .text(d3.format(",.0f")(d.raw) + " MW")
+          .attr("visibility", "visible");
+      })
+      .on("mouseout", function () {
+        hoverLabel.attr("visibility", "hidden");
+      });
+    bars.exit().remove();
+
+    // Keep hover label on top of all other elements
+    this.hoverLabel.raise();
+  }
+}
+
+/* ── CountHistogram ───────────────────────────────────────────────────────── */
+
+class CountHistogram {
+  constructor(id, data) {
+    this.data = data;
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 8, right: 8, bottom: 40, left: 36 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+    const W = this.W,
+      H = this.H;
+
+    this.g = this.svg
+      .append("g")
+      .attr("transform", `translate(${m.left},${m.top})`);
+
+    // Grid group must be first child so it's always behind bars
+    this.gridGroup = this.g.append("g");
+
+    this.xS = d3.scaleBand().domain(FUELS).range([0, W]).padding(0.25);
+    this.yS = d3.scaleLinear().domain([0, 1]).range([H, 0]);
+
+    // X label
+    this.svg
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("x", m.left + W / 2)
+      .attr("y", m.top + H + 38)
+      .attr("text-anchor", "middle")
+      .text("Fuel type");
+
+    // Y label
+    this.svg
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(m.top + H / 2))
+      .attr("y", 10)
+      .attr("text-anchor", "middle")
+      .text("Plant count");
+
+    // X ticks
+    FUELS.forEach((f) => {
+      this.g
+        .append("text")
+        .attr("class", "tick")
+        .attr("x", this.xS(f) + this.xS.bandwidth() / 2)
+        .attr("y", H + 8)
+        .attr("text-anchor", "end")
+        .attr(
+          "transform",
+          `rotate(-40, ${this.xS(f) + this.xS.bandwidth() / 2}, ${H + 8})`,
+        )
+        .text(f);
+    });
+
+    // Hover label
+    this.hoverLabel = this.g
+      .append("text")
+      .attr("class", "bar-label")
+      .attr("text-anchor", "middle")
+      .attr("font-size", "9px")
+      .attr("fill", "#333")
+      .style("pointer-events", "none")
+      .attr("visibility", "hidden");
+  }
+
+  update(min_lat, max_lat, min_lng, max_lng, activeFuels, activeCountry) {
+    const counts = {};
+    FUELS.forEach((f) => {
+      counts[f] = 0;
+    });
+
+    this.data.forEach((d) => {
+      if (
+        d.lat < min_lat ||
+        d.lat > max_lat ||
+        d.lng < min_lng ||
+        d.lng > max_lng
+      )
+        return;
+      if (activeCountry !== "ALL" && d.country !== activeCountry) return;
+      const fuel = normalizeFuel(d.fuel);
+      if (!activeFuels.includes(fuel)) return;
+      counts[fuel]++;
+    });
+
+    const mx = Math.max(...Object.values(counts), 0);
+    this.yS.domain([0, mx > 0 ? mx : 1]);
+
+    // Y gridlines + ticks
+    const yTicks = this.yS.ticks(4);
+    const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
+    yLines
+      .enter()
+      .append("line")
+      .attr("class", "y-grid")
+      .merge(yLines)
+      .attr("x1", 0)
+      .attr("x2", this.W)
+      .attr("y1", (d) => this.yS(d))
+      .attr("y2", (d) => this.yS(d))
+      .attr("stroke", "#dde5dd")
+      .attr("stroke-width", 0.5);
+    yLines.exit().remove();
+
+    const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
+    yTickTexts
+      .enter()
+      .append("text")
+      .attr("class", "tick y-tick")
+      .merge(yTickTexts)
+      .attr("x", -4)
+      .attr("y", (d) => this.yS(d))
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
+      .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
+    yTickTexts.exit().remove();
+
+    const barData = FUELS.map((f) => ({ fuel: f, count: counts[f] }));
+    const hoverLabel = this.hoverLabel;
+    const xS = this.xS;
+    const yS = this.yS;
+    const H = this.H;
+
+    const bars = this.g.selectAll("rect.bar").data(barData);
+    bars
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .merge(bars)
+      .attr("x", (d) => xS(d.fuel))
+      .attr("width", xS.bandwidth())
+      .attr("y", (d) => yS(d.count))
+      .attr("height", (d) => H - yS(d.count))
+      .attr("fill", (d) => FUEL_COLORS[d.fuel])
+      .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
+      .on("mouseover", function (d) {
+        if (d.count === 0) return;
+        hoverLabel
+          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
+          .attr("y", yS(d.count) - 4)
+          .text(d3.format(",")(d.count))
+          .attr("visibility", "visible");
+      })
+      .on("mouseout", function () {
+        hoverLabel.attr("visibility", "hidden");
+      });
+    bars.exit().remove();
+
+    this.hoverLabel.raise();
+  }
+}
+
+/* ── CapacityPieChart ─────────────────────────────────────────────────────── */
+
+class CapacityPieChart {
+  constructor(id, data) {
+    this.data = data;
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 6, right: 6, bottom: 6, left: 6 };
+    const W = vb.width - m.left - m.right;
+    const H = vb.height - m.top - m.bottom;
+    this.R = Math.min(W, H) / 2;
+
+    this.g = this.svg
+      .append("g")
+      .attr("transform", `translate(${m.left + W / 2},${m.top + H / 2})`);
+
+    this.arc = d3.arc().innerRadius(0).outerRadius(this.R);
+    this.pie = d3.pie().value((d) => d.value).sort(null);
+  }
+
+  update(min_lat, max_lat, min_lng, max_lng, activeFuels, activeCountry) {
+    const sums = {};
+    FUELS.forEach((f) => { sums[f] = 0; });
+
+    this.data.forEach((d) => {
+      if (d.lat < min_lat || d.lat > max_lat || d.lng < min_lng || d.lng > max_lng) return;
+      if (activeCountry !== "ALL" && d.country !== activeCountry) return;
+      const fuel = normalizeFuel(d.fuel);
+      if (!activeFuels.includes(fuel)) return;
+      sums[fuel] += d.capacity || 0;
+    });
+
+    const pieData = FUELS.map((f) => ({ fuel: f, value: sums[f] }));
+    const total = d3.sum(pieData, (d) => d.value);
+    const pieLabel = document.getElementById("pie-label");
+
+    document.getElementById("total-mw").textContent =
+      total > 0 ? d3.format(",.0f")(total) + " MW" : "—";
+
+    const arcs = this.pie(pieData);
+    const slices = this.g.selectAll("path.slice").data(arcs);
+    slices.enter().append("path").attr("class", "slice")
+      .merge(slices)
+      .attr("d", this.arc)
+      .attr("fill", (d) => FUEL_COLORS[d.data.fuel])
+      .attr("opacity", (d) => (activeFuels.includes(d.data.fuel) ? 0.85 : 0.2))
+      .attr("stroke", "#fff").attr("stroke-width", 0.5)
+      .on("mouseover", function(d) {
+        if (d.data.value === 0) return;
+        const pct = (d.data.value / total * 100).toFixed(1);
+        pieLabel.textContent =
+          `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
+      })
+      .on("mouseout", function() {
+        pieLabel.textContent = "Hover a slice";
+      });
+    slices.exit().remove();
   }
 }
 
@@ -335,7 +599,6 @@ function applyFilters(markers, activeFuels, activeCountry) {
     m.setStyle(
       show ? { opacity: 1, fillOpacity: 0.75 } : { opacity: 0, fillOpacity: 0 },
     );
-    m.setInteractive(show);
   });
 }
 
@@ -359,6 +622,7 @@ whenDocumentLoaded(() => {
   ).addTo(map);
 
   buildDeforestToggle(map);
+  buildPopulationToggle();
 
   const renderer = L.canvas({ padding: 0.5 });
 
@@ -381,10 +645,12 @@ whenDocumentLoaded(() => {
 
       const markers = buildMarkers(map, data, renderer);
       const histogram = new EnergyHistogram("plot-1", data);
+      const countChart = new CountHistogram("plot-2", data);
+      const pieChart = new CapacityPieChart("plot-3", data);
 
       function getFilters() {
         return {
-          fuels:   getActiveFuels(),
+          fuels: getActiveFuels(),
           country: document.getElementById("country-select").value,
         };
       }
@@ -392,7 +658,17 @@ whenDocumentLoaded(() => {
       function refreshHistogram() {
         const { fuels, country } = getFilters();
         const b = map.getBounds();
-        histogram.update(b.getSouth(), b.getNorth(), b.getWest(), b.getEast(), fuels, country);
+        const args = [
+          b.getSouth(),
+          b.getNorth(),
+          b.getWest(),
+          b.getEast(),
+          fuels,
+          country,
+        ];
+        histogram.update(...args);
+        countChart.update(...args);
+        pieChart.update(...args);
       }
 
       function onFilterChange() {
