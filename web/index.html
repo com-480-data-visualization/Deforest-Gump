@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deforest Gump</title>
+    <meta
+      name="author"
+      content="Simon Barras, Oliver Daoud, Phuc-hung Truong"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="lib/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <!-- Loading overlay -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <span>Loading power plant data…</span>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <h1>Deforest Gump</h1>
+      <p>Global power plants &amp; deforestation — EPFL COM-480</p>
+    </header>
+
+    <!-- Filter Controls -->
+    <div id="controls">
+      <div class="control-group">
+        <span class="control-label">Fuel Type</span>
+        <div class="fuel-chips" id="fuel-chips">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Country</span>
+        <select id="country-select">
+          <option value="ALL">All countries</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Overlay</span>
+        <div class="toggle-row">
+          <button id="deforest-toggle">
+            <span class="toggle-icon">🌳</span>
+            Deforestation
+            <span class="toggle-pill"></span>
+          </button>
+          <button id="population-toggle">
+            <span class="toggle-icon">👥</span>
+            Population
+            <span class="toggle-pill"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <!-- Top row -->
+      <section class="top-row">
+        <!-- Map -->
+        <div id="map-wrapper">
+          <div id="map"></div>
+        </div>
+
+        <!-- Side panel -->
+        <div id="side-panel">
+          <!-- Detail card -->
+          <div class="panel-card panel-card--grow">
+            <h3>Plant Details</h3>
+            <div id="detail-content">
+              <p class="detail-placeholder">
+                Hover or click a marker on the map to see details about a power
+                plant.
+              </p>
+            </div>
+          </div>
+
+          <!-- Legend card -->
+          <div class="panel-card">
+            <h3>Fuel Type Legend</h3>
+            <div class="legend-items" id="legend">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom charts -->
+      <section class="bottom-row">
+        <div class="chart-card">
+          <div class="chart-title">
+            Avg. Capacity by Fuel Type — current view
+          </div>
+          <svg
+            id="plot-1"
+            viewBox="0 0 220 100"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-title">Plant Count by Fuel Type — current view</div>
+          <svg
+            id="plot-2"
+            viewBox="0 0 220 100"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+        </div>
+      </section>
+
+      <section class="bottom-row">
+        <div class="chart-card">
+          <div class="chart-title">
+            Total Capacity by Fuel Type — current view
+          </div>
+          <div class="chart-total">Total: <span id="total-mw">—</span></div>
+          <svg
+            id="plot-3"
+            viewBox="0 0 220 100"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+          <div id="pie-label" class="pie-label">Hover a slice</div>
+        </div>
+
+        <div class="chart-card chart-card--placeholder">
+          <div class="chart-title">Coming in Milestone 3</div>
+          <div class="placeholder-body">
+            <span class="placeholder-icon">🌳</span>
+            <p>Deforestation &amp; power plant correlation</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="lib/leaflet.js"></script>
+    <script src="lib/d3.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

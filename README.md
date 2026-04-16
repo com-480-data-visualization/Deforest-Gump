@@ -9,8 +9,11 @@
 [Milestone 1](#milestone-1) • [Milestone 2](#milestone-2) • [Milestone 3](#milestone-3)
 
 ## Milestone 1 (20th March, 5pm)
-[Milestone 1 Report](Milestone_1.pdf)
+[Milestone 1 Report](DataViz_Milestone_1.pdf)
 ## Milestone 2 (17th April, 5pm)
+[Milestone 2 Report](DataViz_Milestone_2.pdf)
+
+[Milestone 2 Website](https://com-480-data-visualization.github.io/Deforest-Gump/)
 
 **10% of the final grade**
 
