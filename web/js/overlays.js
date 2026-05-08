@@ -72,16 +72,88 @@ export function buildDeforestToggle(map) {
   });
 }
 
-/* ── Population Overlay (stub) ────────────────────────────────────────────── */
+/* ── Population Overlay ───────────────────────────────────────────────────── */
 
-export function buildPopulationToggle() {
+let populationLayer = null;
+let populationVisible = false;
+
+const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
+
+function formatPop(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + "k";
+  return String(n);
+}
+
+function buildPopulationLegend() {
+  const el = document.getElementById("population-legend");
+  if (!el || el.children.length > 0) return;
+
+  const steps = [
+    { label: "< 1 k", norm: 0.1 },
+    { label: "10 k",  norm: 0.4 },
+    { label: "100 k", norm: 0.65 },
+    { label: "1 M+",  norm: 1.0 },
+  ];
+  steps.forEach(({ label, norm }) => {
+    el.insertAdjacentHTML(
+      "beforeend",
+      `<div class="legend-item">
+        <span class="legend-dot" style="background:${popColorScale(norm)}"></span>
+        <span>${label} people / 10 km²</span>
+      </div>`,
+    );
+  });
+}
+
+function loadPopulationLayer(map) {
+  fetch("data/5-population.geojson")
+    .then((r) => {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    })
+    .then((geojson) => {
+      populationLayer = L.geoJSON(geojson, {
+        pointToLayer: (f, latlng) =>
+          L.circleMarker(latlng, {
+            radius: 3,
+            fillColor: popColorScale(f.properties.norm),
+            fillOpacity: 0.6,
+            color: "transparent",
+            weight: 0,
+          }),
+        onEachFeature: (f, layer) => {
+          layer.bindTooltip(`${formatPop(f.properties.pop)} people`, {
+            sticky: true,
+            className: "deforest-tooltip",
+          });
+        },
+      }).addTo(map);
+
+      buildPopulationLegend();
+      document.getElementById("population-legend-card").classList.remove("hidden");
+    })
+    .catch((err) => {
+      console.warn("Population layer failed to load:", err.message);
+      populationVisible = false;
+      document.getElementById("population-toggle").classList.remove("active");
+      showToast("Failed to load population layer.");
+    });
+}
+
+export function buildPopulationToggle(map) {
   const btn = document.getElementById("population-toggle");
   btn.addEventListener("click", () => {
-    btn.classList.toggle("active");
-    const active = btn.classList.contains("active");
-    if (active) {
-      btn.classList.remove("active");
-      showToast("Population layer coming soon.");
+    populationVisible = !populationVisible;
+    btn.classList.toggle("active", populationVisible);
+    if (populationVisible) {
+      loadPopulationLayer(map);
+    } else {
+      if (populationLayer) {
+        map.removeLayer(populationLayer);
+        populationLayer = null;
+      }
+      document.getElementById("population-legend-card").classList.add("hidden");
     }
   });
 }

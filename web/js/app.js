@@ -21,7 +21,7 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
 }).addTo(map);
 
 buildDeforestToggle(map);
-buildPopulationToggle();
+buildPopulationToggle(map);
 
 const renderer = L.canvas({ padding: 0.5 });
 
