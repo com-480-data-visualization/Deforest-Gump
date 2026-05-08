@@ -11,11 +11,19 @@ export const FUEL_COLORS = {
 export const FUELS = Object.keys(FUEL_COLORS);
 
 export const DEFOREST_COLORS = {
-  1: "#b5179e", // commodity-driven
-  2: "#f77f00", // shifting agriculture
-  3: "#4cc9f0", // forestry
-  4: "#ffba08", // wildfire
-  5: "#3a86ff", // urbanization
+  1: "#b5179e",
+  2: "#f77f00",
+  3: "#4cc9f0",
+  4: "#ffba08",
+  5: "#3a86ff",
+};
+
+export const DEFOREST_CAUSES = {
+  1: "Commodity-driven deforestation",
+  2: "Shifting agriculture",
+  3: "Forestry",
+  4: "Wildfire",
+  5: "Urbanization",
 };
 
 export const normalizeFuel = (raw) => (FUELS.includes(raw) ? raw : "Other");

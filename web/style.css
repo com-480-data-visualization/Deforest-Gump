@@ -464,6 +464,24 @@ main {
   font-size: 2rem;
 }
 
+/* ── Utility ─────────────────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Deforestation tooltip ───────────────────────────────────────────────── */
+.deforest-tooltip {
+  background: rgba(27, 61, 42, 0.9);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+.deforest-tooltip::before { display: none; }
+
 /* ── Toast notification ──────────────────────────────────────────────────── */
 .toast {
   position: fixed;
