@@ -1,5 +1,12 @@
 import { FUELS, FUEL_COLORS, normalizeFuel, escapeHtml, DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 
+/* ── Intro banner ─────────────────────────────────────────────────────────── */
+
+const introBanner = document.getElementById("intro-banner");
+document.getElementById("intro-dismiss").addEventListener("click", () => {
+  introBanner.classList.add("intro-hidden");
+});
+
 /* ── Loading overlay ──────────────────────────────────────────────────────── */
 
 const loading = document.getElementById("loading");
