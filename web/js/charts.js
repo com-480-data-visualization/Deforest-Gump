@@ -1,5 +1,7 @@
 import { FUELS, FUEL_COLORS, normalizeFuel } from "./constants.js";
 
+const T = 350; // shared transition duration (ms)
+
 /* ── CorrelationScatter ───────────────────────────────────────────────────── */
 
 export class CorrelationScatter {
@@ -99,9 +101,11 @@ export class CorrelationScatter {
   }
 
   _drawDots() {
-    const { g, xS, yS, rS, hoverLabel, svg, W, H, onCountryClick } = this;
-    const m = { top: 10, left: 46 };
+    const { g, xS, yS, rS, hoverLabel, W, onCountryClick } = this;
+    const mLeft = 46;
+    const mTop = 10;
 
+    // Dots enter with r=0 and fade in with a staggered delay
     g.selectAll("circle.dot")
       .data(this.data)
       .enter()
@@ -109,16 +113,20 @@ export class CorrelationScatter {
       .attr("class", "dot")
       .attr("cx", (d) => xS(d.deforest_count))
       .attr("cy", (d) => yS(d.fossil_pct))
-      .attr("r", (d) => rS(d.plant_count))
+      .attr("r", 0)
       .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)])
-      .attr("fill-opacity", 0.75)
+      .attr("fill-opacity", 0)
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.6)
       .style("cursor", "pointer")
       .on("mouseover", function (d) {
-        d3.select(this).attr("stroke", "#1c2e1c").attr("stroke-width", 1.2);
-        const cx = m.left + xS(d.deforest_count);
-        const cy = m.top + yS(d.fossil_pct);
+        d3.select(this)
+          .transition().duration(120)
+          .attr("stroke", "#1c2e1c")
+          .attr("stroke-width", 1.5)
+          .attr("fill-opacity", 1);
+        const cx = mLeft + xS(d.deforest_count);
+        const cy = mTop + yS(d.fossil_pct);
         const labelX = cx > W * 0.75 ? cx - 4 : cx + 4;
         const anchor = cx > W * 0.75 ? "end" : "start";
         hoverLabel
@@ -129,10 +137,20 @@ export class CorrelationScatter {
           .attr("visibility", "visible");
       })
       .on("mouseout", function () {
-        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 0.6);
+        d3.select(this)
+          .transition().duration(120)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 0.6)
+          .attr("fill-opacity", 0.75);
         hoverLabel.attr("visibility", "hidden");
       })
-      .on("click", (d) => onCountryClick(d.country));
+      .on("click", (d) => onCountryClick(d.country))
+      .transition()
+      .duration(500)
+      .delay((d, i) => i * 4)
+      .ease(d3.easeCubicOut)
+      .attr("r", (d) => rS(d.plant_count))
+      .attr("fill-opacity", 0.75);
   }
 }
 
@@ -201,32 +219,32 @@ class BarChart {
   }
 
   _updateYGrid() {
+    const t = d3.transition().duration(T);
     const yTicks = this.yS.ticks(4);
 
     const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
-    yLines
-      .enter()
+    yLines.enter()
       .append("line")
       .attr("class", "y-grid")
+      .attr("x1", 0).attr("x2", this.W)
+      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
+      .attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d))
       .merge(yLines)
-      .attr("x1", 0)
-      .attr("x2", this.W)
+      .transition(t)
       .attr("y1", (d) => this.yS(d))
-      .attr("y2", (d) => this.yS(d))
-      .attr("stroke", "#dde5dd")
-      .attr("stroke-width", 0.5);
+      .attr("y2", (d) => this.yS(d));
     yLines.exit().remove();
 
     const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
-    yTickTexts
-      .enter()
+    yTickTexts.enter()
       .append("text")
       .attr("class", "tick y-tick")
-      .merge(yTickTexts)
       .attr("x", -4)
-      .attr("y", (d) => this.yS(d))
       .attr("text-anchor", "end")
       .attr("dominant-baseline", "middle")
+      .merge(yTickTexts)
+      .transition(t)
+      .attr("y", (d) => this.yS(d))
       .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
     yTickTexts.exit().remove();
   }
@@ -239,6 +257,53 @@ class BarChart {
       if (!activeFuels.includes(normalizeFuel(d.fuel))) return false;
       return true;
     });
+  }
+
+  // Shared bar update logic used by both subclasses
+  _updateBars(barData, activeFuels, formatValue) {
+    const { xS, yS, H, hoverLabel } = this;
+    const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+
+    const bars = this.g.selectAll("rect.bar").data(barData);
+
+    // Enter: bars start collapsed at baseline
+    bars.enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", (d) => xS(d.fuel))
+      .attr("width", xS.bandwidth())
+      .attr("fill", (d) => FUEL_COLORS[d.fuel])
+      .attr("y", H)
+      .attr("height", 0);
+
+    // Update + enter: set static attrs and events, then transition geometry
+    const merged = this.g.selectAll("rect.bar");
+
+    merged
+      .attr("x", (d) => xS(d.fuel))
+      .attr("width", xS.bandwidth())
+      .attr("fill", (d) => FUEL_COLORS[d.fuel])
+      .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
+      .on("mouseover", function (d) {
+        if (d.val === 0) return;
+        d3.select(this).attr("opacity", 1);
+        hoverLabel
+          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
+          .attr("y", yS(d.val) - 4)
+          .text(formatValue(d.val))
+          .attr("visibility", "visible");
+      })
+      .on("mouseout", function (d) {
+        d3.select(this).attr("opacity", activeFuels.includes(d.fuel) ? 0.85 : 0.2);
+        hoverLabel.attr("visibility", "hidden");
+      });
+
+    merged.transition(t)
+      .attr("y", (d) => yS(d.val))
+      .attr("height", (d) => H - yS(d.val));
+
+    bars.exit().remove();
+    hoverLabel.raise();
   }
 }
 
@@ -253,53 +318,20 @@ export class EnergyHistogram extends BarChart {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
-    this._filterData(
-      minLat,
-      maxLat,
-      minLng,
-      maxLng,
-      activeFuels,
-      activeCountry,
-    ).forEach((d) => {
-      const fuel = normalizeFuel(d.fuel);
-      sums[fuel] += d.capacity || 0;
-      counts[fuel]++;
-    });
+    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry)
+      .forEach((d) => {
+        const fuel = normalizeFuel(d.fuel);
+        sums[fuel] += d.capacity || 0;
+        counts[fuel]++;
+      });
 
-    const rawAvg = FUELS.map((f) =>
-      counts[f] === 0 ? 0 : sums[f] / counts[f],
-    );
+    const rawAvg = FUELS.map((f) => (counts[f] === 0 ? 0 : sums[f] / counts[f]));
     const mx = Math.max(...rawAvg, 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
     this._updateYGrid();
 
     const barData = FUELS.map((f, i) => ({ fuel: f, val: rawAvg[i] }));
-    const { xS, yS, H, hoverLabel } = this;
-
-    const bars = this.g.selectAll("rect.bar").data(barData);
-    bars
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .merge(bars)
-      .attr("x", (d) => xS(d.fuel))
-      .attr("width", xS.bandwidth())
-      .attr("y", (d) => yS(d.val))
-      .attr("height", (d) => H - yS(d.val))
-      .attr("fill", (d) => FUEL_COLORS[d.fuel])
-      .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
-      .on("mouseover", function (d) {
-        if (d.val === 0) return;
-        hoverLabel
-          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
-          .attr("y", yS(d.val) - 4)
-          .text(d3.format(",.0f")(d.val) + " MW")
-          .attr("visibility", "visible");
-      })
-      .on("mouseout", () => hoverLabel.attr("visibility", "hidden"));
-    bars.exit().remove();
-
-    hoverLabel.raise();
+    this._updateBars(barData, activeFuels, (v) => d3.format(",.0f")(v) + " MW");
   }
 }
 
@@ -313,48 +345,15 @@ export class CountHistogram extends BarChart {
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
-    this._filterData(
-      minLat,
-      maxLat,
-      minLng,
-      maxLng,
-      activeFuels,
-      activeCountry,
-    ).forEach((d) => {
-      counts[normalizeFuel(d.fuel)]++;
-    });
+    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry)
+      .forEach((d) => { counts[normalizeFuel(d.fuel)]++; });
 
     const mx = Math.max(...Object.values(counts), 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
     this._updateYGrid();
 
     const barData = FUELS.map((f) => ({ fuel: f, val: counts[f] }));
-    const { xS, yS, H, hoverLabel } = this;
-
-    const bars = this.g.selectAll("rect.bar").data(barData);
-    bars
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .merge(bars)
-      .attr("x", (d) => xS(d.fuel))
-      .attr("width", xS.bandwidth())
-      .attr("y", (d) => yS(d.val))
-      .attr("height", (d) => H - yS(d.val))
-      .attr("fill", (d) => FUEL_COLORS[d.fuel])
-      .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
-      .on("mouseover", function (d) {
-        if (d.val === 0) return;
-        hoverLabel
-          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
-          .attr("y", yS(d.val) - 4)
-          .text(d3.format(",")(d.val))
-          .attr("visibility", "visible");
-      })
-      .on("mouseout", () => hoverLabel.attr("visibility", "hidden"));
-    bars.exit().remove();
-
-    hoverLabel.raise();
+    this._updateBars(barData, activeFuels, (v) => d3.format(",")(v));
   }
 }
 
@@ -375,18 +374,14 @@ export class CapacityPieChart {
       .attr("transform", `translate(${m.left + W / 2},${m.top + H / 2})`);
 
     this.arc = d3.arc().innerRadius(0).outerRadius(this.R);
-    this.pie = d3
-      .pie()
-      .value((d) => d.value)
-      .sort(null);
+    this.pie = d3.pie().value((d) => d.value).sort(null);
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
     this.data.forEach((d) => {
-      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng)
-        return;
+      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng) return;
       if (activeCountry !== "ALL" && d.country !== activeCountry) return;
       const fuel = normalizeFuel(d.fuel);
       if (!activeFuels.includes(fuel)) return;
@@ -396,29 +391,50 @@ export class CapacityPieChart {
     const pieData = FUELS.map((f) => ({ fuel: f, value: sums[f] }));
     const total = d3.sum(pieData, (d) => d.value);
     const pieLabel = document.getElementById("pie-label");
+    const arc = this.arc;
 
     document.getElementById("total-mw").textContent =
       total > 0 ? d3.format(",.0f")(total) + " MW" : "—";
 
     const slices = this.g.selectAll("path.slice").data(this.pie(pieData));
-    slices
-      .enter()
+
+    // Enter: initialise _current for the tween to interpolate from
+    slices.enter()
       .append("path")
       .attr("class", "slice")
-      .merge(slices)
-      .attr("d", this.arc)
+      .each(function (d) { this._current = d; })
+      .attr("d", arc)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 0.5);
+
+    const merged = this.g.selectAll("path.slice");
+
+    merged
       .attr("fill", (d) => FUEL_COLORS[d.data.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.data.fuel) ? 0.85 : 0.2))
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.5)
       .on("mouseover", function (d) {
         if (d.data.value === 0) return;
+        d3.select(this).transition().duration(120).attr("opacity", 1);
         const pct = ((d.data.value / total) * 100).toFixed(1);
-        pieLabel.textContent = `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
+        pieLabel.textContent =
+          `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
       })
-      .on("mouseout", () => {
+      .on("mouseout", function (d) {
+        d3.select(this).transition().duration(120)
+          .attr("opacity", activeFuels.includes(d.data.fuel) ? 0.85 : 0.2);
         pieLabel.textContent = "Hover a slice";
       });
+
+    // Smooth arc tween on every update
+    merged.transition().duration(T)
+      .attrTween("d", function (d) {
+        const interp = d3.interpolate(this._current, d);
+        this._current = interp(1);
+        return (t) => arc(interp(t));
+      });
+
     slices.exit().remove();
   }
 }
