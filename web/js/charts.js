@@ -1,5 +1,141 @@
 import { FUELS, FUEL_COLORS, normalizeFuel } from "./constants.js";
 
+/* ── CorrelationScatter ───────────────────────────────────────────────────── */
+
+export class CorrelationScatter {
+  constructor(id, data, onCountryClick) {
+    this.data = data;
+    this.onCountryClick = onCountryClick;
+
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 10, right: 12, bottom: 44, left: 46 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+
+    this.g = this.svg
+      .append("g")
+      .attr("transform", `translate(${m.left},${m.top})`);
+
+    const counts = data.map((d) => d.deforest_count);
+    const minX = d3.min(counts);
+    const maxX = d3.max(counts);
+
+    this.xS = d3.scaleLog().domain([minX, maxX]).range([0, this.W]).clamp(true);
+    this.yS = d3.scaleLinear().domain([0, 100]).range([this.H, 0]);
+    this.rS = d3
+      .scaleSqrt()
+      .domain([0, d3.max(data, (d) => d.plant_count)])
+      .range([2, 9]);
+
+    // Grid lines
+    const gridG = this.g.append("g");
+    [0, 25, 50, 75, 100].forEach((v) => {
+      gridG
+        .append("line")
+        .attr("x1", 0).attr("x2", this.W)
+        .attr("y1", this.yS(v)).attr("y2", this.yS(v))
+        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+    });
+
+    // X axis ticks
+    const xTicks = this.xS.ticks(5);
+    xTicks.forEach((v) => {
+      this.g
+        .append("text")
+        .attr("class", "tick")
+        .attr("x", this.xS(v))
+        .attr("y", this.H + 9)
+        .attr("text-anchor", "middle")
+        .text(d3.format("~s")(v));
+      gridG
+        .append("line")
+        .attr("x1", this.xS(v)).attr("x2", this.xS(v))
+        .attr("y1", 0).attr("y2", this.H)
+        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+    });
+
+    // Y axis ticks
+    [0, 25, 50, 75, 100].forEach((v) => {
+      this.g
+        .append("text")
+        .attr("class", "tick")
+        .attr("x", -4)
+        .attr("y", this.yS(v))
+        .attr("text-anchor", "end")
+        .attr("dominant-baseline", "middle")
+        .text(v + "%");
+    });
+
+    // Axis labels
+    this.svg
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("x", m.left + this.W / 2)
+      .attr("y", m.top + this.H + 40)
+      .attr("text-anchor", "middle")
+      .text("Deforestation pixels (log scale)");
+
+    this.svg
+      .append("text")
+      .attr("class", "axis-label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(m.top + this.H / 2))
+      .attr("y", 11)
+      .attr("text-anchor", "middle")
+      .text("Fossil fuel capacity %");
+
+    // Hover label
+    this.hoverLabel = this.svg
+      .append("text")
+      .attr("class", "scatter-label")
+      .attr("font-size", "7px")
+      .attr("fill", "#1c2e1c")
+      .attr("font-weight", "600")
+      .style("pointer-events", "none")
+      .attr("visibility", "hidden");
+
+    this._drawDots();
+  }
+
+  _drawDots() {
+    const { g, xS, yS, rS, hoverLabel, svg, W, H, onCountryClick } = this;
+    const m = { top: 10, left: 46 };
+
+    g.selectAll("circle.dot")
+      .data(this.data)
+      .enter()
+      .append("circle")
+      .attr("class", "dot")
+      .attr("cx", (d) => xS(d.deforest_count))
+      .attr("cy", (d) => yS(d.fossil_pct))
+      .attr("r", (d) => rS(d.plant_count))
+      .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)])
+      .attr("fill-opacity", 0.75)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 0.6)
+      .style("cursor", "pointer")
+      .on("mouseover", function (d) {
+        d3.select(this).attr("stroke", "#1c2e1c").attr("stroke-width", 1.2);
+        const cx = m.left + xS(d.deforest_count);
+        const cy = m.top + yS(d.fossil_pct);
+        const labelX = cx > W * 0.75 ? cx - 4 : cx + 4;
+        const anchor = cx > W * 0.75 ? "end" : "start";
+        hoverLabel
+          .attr("x", labelX)
+          .attr("y", cy - rS(d.plant_count) - 3)
+          .attr("text-anchor", anchor)
+          .text(`${d.country} — ${d.fossil_pct}% fossil`)
+          .attr("visibility", "visible");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("stroke", "#fff").attr("stroke-width", 0.6);
+        hoverLabel.attr("visibility", "hidden");
+      })
+      .on("click", (d) => onCountryClick(d.country));
+  }
+}
+
 /* ── BarChart (shared base) ───────────────────────────────────────────────── */
 
 class BarChart {

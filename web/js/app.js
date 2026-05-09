@@ -8,7 +8,7 @@ import {
 } from "./ui.js";
 import { buildDeforestToggle, buildPopulationToggle } from "./overlays.js";
 import { buildMarkers, applyFilters } from "./map.js";
-import { EnergyHistogram, CountHistogram, CapacityPieChart } from "./charts.js";
+import { EnergyHistogram, CountHistogram, CapacityPieChart, CorrelationScatter } from "./charts.js";
 
 buildLegend();
 
@@ -27,15 +27,18 @@ const renderer = L.canvas({ padding: 0.5 });
 
 showLoading();
 
-d3.csv("data/4-power-plants.csv", (d) => ({
-  name: d.name,
-  country: d.country_long,
-  fuel: d.primary_fuel,
-  capacity: +d.capacity_mw,
-  lat: +d.latitude,
-  lng: +d.longitude,
-}))
-  .then((data) => {
+Promise.all([
+  d3.csv("data/4-power-plants.csv", (d) => ({
+    name: d.name,
+    country: d.country_long,
+    fuel: d.primary_fuel,
+    capacity: +d.capacity_mw,
+    lat: +d.latitude,
+    lng: +d.longitude,
+  })),
+  d3.json("data/country-correlation.json"),
+])
+  .then(([data, correlationData]) => {
     hideLoading();
 
     const countries = new Set(data.map((d) => d.country).filter(Boolean));
@@ -46,6 +49,16 @@ d3.csv("data/4-power-plants.csv", (d) => ({
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
     const pieChart = new CapacityPieChart("plot-3", data);
+
+    new CorrelationScatter("plot-4", correlationData, (countryName) => {
+      const sel = document.getElementById("country-select");
+      if ([...sel.options].some((o) => o.value === countryName)) {
+        sel.value = countryName;
+      } else {
+        sel.value = "ALL";
+      }
+      onFilterChange();
+    });
 
     function getViewArgs() {
       const b = map.getBounds();
