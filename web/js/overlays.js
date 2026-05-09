@@ -5,6 +5,20 @@ import { showToast } from "./ui.js";
 
 let deforestLayer = null;
 let deforestVisible = false;
+let deforestFeatures = [];
+
+export const isDeforestVisible = () => deforestVisible;
+
+export function getDeforestStats(south, north, west, east) {
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  deforestFeatures.forEach((f) => {
+    const [lon, lat] = f.geometry.coordinates;
+    if (lat < south || lat > north || lon < west || lon > east) return;
+    const d = f.properties.driver;
+    if (counts[d] !== undefined) counts[d]++;
+  });
+  return counts;
+}
 
 function buildDeforestLegend() {
   const el = document.getElementById("deforest-legend");
@@ -27,6 +41,8 @@ function loadDeforestLayer(map) {
       return r.json();
     })
     .then((geojson) => {
+      deforestFeatures = geojson.features;
+
       deforestLayer = L.geoJSON(geojson, {
         pointToLayer: (f, latlng) =>
           L.circleMarker(latlng, {
@@ -46,6 +62,7 @@ function loadDeforestLayer(map) {
 
       buildDeforestLegend();
       document.getElementById("deforest-legend-card").classList.remove("hidden");
+      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: true } }));
     })
     .catch((err) => {
       console.warn("Deforestation layer failed to load:", err.message);
@@ -67,7 +84,9 @@ export function buildDeforestToggle(map) {
         map.removeLayer(deforestLayer);
         deforestLayer = null;
       }
+      deforestFeatures = [];
       document.getElementById("deforest-legend-card").classList.add("hidden");
+      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: false } }));
     }
   });
 }

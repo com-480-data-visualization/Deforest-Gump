@@ -1,4 +1,4 @@
-import { FUELS, FUEL_COLORS, normalizeFuel, escapeHtml } from "./constants.js";
+import { FUELS, FUEL_COLORS, normalizeFuel, escapeHtml, DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 
 /* ── Loading overlay ──────────────────────────────────────────────────────── */
 
@@ -98,4 +98,41 @@ export function showDetail(plant) {
 export function clearDetail() {
   document.getElementById("detail-content").innerHTML =
     '<p class="detail-placeholder">Hover or click a marker on the map to see details about a power plant.</p>';
+}
+
+/* ── Deforestation Stats Panel ────────────────────────────────────────────── */
+
+export function showDeforestStats(driverCounts) {
+  const statsEl = document.getElementById("deforest-stats");
+  const rowsEl = document.getElementById("deforest-stats-rows");
+  if (!statsEl || !rowsEl) return;
+
+  const total = Object.values(driverCounts).reduce((s, v) => s + v, 0);
+  if (total === 0) {
+    rowsEl.innerHTML = '<p class="detail-placeholder">No deforestation pixels in current view.</p>';
+    statsEl.classList.remove("hidden");
+    return;
+  }
+
+  rowsEl.innerHTML = Object.entries(DEFOREST_CAUSES)
+    .map(([driver, label]) => {
+      const count = driverCounts[driver] || 0;
+      const pct = total > 0 ? (count / total) * 100 : 0;
+      return `
+        <div class="deforest-stat-row">
+          <span class="legend-dot" style="background:${DEFOREST_COLORS[driver]};flex-shrink:0"></span>
+          <span class="deforest-stat-label">${label}</span>
+          <div class="deforest-stat-bar-wrap">
+            <div class="deforest-stat-bar" style="width:${pct.toFixed(1)}%;background:${DEFOREST_COLORS[driver]}"></div>
+          </div>
+          <span class="deforest-stat-pct">${pct.toFixed(0)}%</span>
+        </div>`;
+    })
+    .join("");
+
+  statsEl.classList.remove("hidden");
+}
+
+export function hideDeforestStats() {
+  document.getElementById("deforest-stats")?.classList.add("hidden");
 }

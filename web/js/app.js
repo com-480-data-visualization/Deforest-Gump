@@ -5,8 +5,10 @@ import {
   getActiveFuels,
   showLoading,
   hideLoading,
+  showDeforestStats,
+  hideDeforestStats,
 } from "./ui.js";
-import { buildDeforestToggle, buildPopulationToggle } from "./overlays.js";
+import { buildDeforestToggle, buildPopulationToggle, isDeforestVisible, getDeforestStats } from "./overlays.js";
 import { buildMarkers, applyFilters } from "./map.js";
 import { EnergyHistogram, CountHistogram, CapacityPieChart, CorrelationScatter } from "./charts.js";
 
@@ -74,6 +76,12 @@ Promise.all([
       pieChart.update(...viewArgs);
     }
 
+    function refreshDeforestSidebar() {
+      if (!isDeforestVisible()) return;
+      const [s, n, w, e] = getViewArgs();
+      showDeforestStats(getDeforestStats(s, n, w, e));
+    }
+
     function onFilterChange() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
@@ -81,7 +89,15 @@ Promise.all([
       refreshCharts();
     }
 
-    map.on("moveend", refreshCharts);
+    document.addEventListener("deforest-toggled", (e) => {
+      if (e.detail.active) {
+        refreshDeforestSidebar();
+      } else {
+        hideDeforestStats();
+      }
+    });
+
+    map.on("moveend", () => { refreshCharts(); refreshDeforestSidebar(); });
     map.fire("moveend");
   })
   .catch(() => hideLoading());

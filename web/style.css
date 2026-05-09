@@ -443,6 +443,60 @@ main {
 /* ── Utility ─────────────────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
+/* ── Deforestation sidebar stats ─────────────────────────────────────────── */
+#deforest-stats {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+.deforest-stats-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+}
+
+.deforest-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.72rem;
+}
+
+.deforest-stat-label {
+  flex: 0 0 auto;
+  width: 5.5rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deforest-stat-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.deforest-stat-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.deforest-stat-pct {
+  flex: 0 0 2rem;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
 /* ── Deforestation tooltip ───────────────────────────────────────────────── */
 .deforest-tooltip {
   background: rgba(27, 61, 42, 0.9);
