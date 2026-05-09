@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="lib/leaflet.css" />
@@ -26,67 +26,79 @@
       <span>Loading power plant data…</span>
     </div>
 
-    <!-- Header -->
-    <header>
-      <h1>Deforest Gump</h1>
-      <p>Global power plants &amp; deforestation — EPFL COM-480</p>
+    <!-- Masthead -->
+    <header class="masthead">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">Deforest <em>Gump</em></span>
+      </div>
+      <div class="masthead-meta">
+        <span>EPFL · COM-480</span>
+        <span class="meta-dot"></span>
+        <span>2026</span>
+      </div>
     </header>
 
-    <!-- Intro banner -->
-    <section id="intro-banner">
-      <div class="intro-body">
-        <div class="intro-text">
-          <strong>Where energy meets the forest</strong>
-          <span>
-            Fossil fuel infrastructure and deforestation are deeply connected.
-            Explore 30 000+ power plants and 500 000+ deforestation pixels
-            across 148 countries — and see the pattern for yourself.
-          </span>
+    <!-- Lede / intro banner -->
+    <section id="intro-banner" class="lede">
+      <div class="lede-text">
+        <div class="lede-eyebrow">A data essay on energy &amp; forests</div>
+        <h2>Where energy <em>meets</em> the forest.</h2>
+        <p class="lede-sub">
+          Fossil-fuel infrastructure and deforestation share the same map. Browse
+          30 000+ power plants and 500 000+ deforestation pixels across 148
+          countries — filter, overlay, and follow the pattern.
+        </p>
+      </div>
+      <div class="lede-stats">
+        <div class="stat">
+          <span class="stat-num">30K+</span>
+          <span class="stat-label">Power plants</span>
         </div>
-        <ol class="intro-steps">
-          <li class="intro-step">
-            <span class="step-num">1</span>
-            <span>Browse power plants — filter by fuel type or country</span>
-          </li>
-          <li class="intro-step">
-            <span class="step-num">2</span>
-            <span>Toggle the deforestation or population overlay</span>
-          </li>
-          <li class="intro-step">
-            <span class="step-num">3</span>
-            <span>Click any dot on the scatter chart to zoom into that country</span>
-          </li>
-        </ol>
+        <div class="stat">
+          <span class="stat-num">148</span>
+          <span class="stat-label">Countries</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">500K+</span>
+          <span class="stat-label">Deforest. pixels</span>
+        </div>
       </div>
       <button id="intro-dismiss" aria-label="Close intro">&#x2715;</button>
     </section>
 
-    <!-- Filter Controls -->
-    <div id="controls">
-      <div class="control-group">
-        <span class="control-label">Fuel Type</span>
-        <div class="fuel-chips" id="fuel-chips">
+    <!-- Toolbar / filters -->
+    <div id="controls" class="toolbar">
+      <div class="tool">
+        <span class="tool-label">Fuel</span>
+        <div class="chips fuel-chips" id="fuel-chips">
           <!-- populated by JS -->
         </div>
       </div>
 
-      <div class="control-group">
-        <span class="control-label">Country</span>
-        <select id="country-select">
-          <option value="ALL">All countries</option>
-        </select>
+      <div class="tool-divider"></div>
+
+      <div class="tool">
+        <span class="tool-label">Country</span>
+        <div class="select-wrap">
+          <select id="country-select">
+            <option value="ALL">All countries</option>
+          </select>
+        </div>
       </div>
 
-      <div class="control-group">
-        <span class="control-label">Overlay</span>
-        <div class="toggle-row">
-          <button id="deforest-toggle">
-            <span class="toggle-icon">🌳</span>
+      <div class="tool-divider"></div>
+
+      <div class="tool">
+        <span class="tool-label">Overlay</span>
+        <div class="toggle-row toggle-group">
+          <button id="deforest-toggle" class="tgl" data-overlay="deforest">
+            <span class="glyph toggle-icon"></span>
             Deforestation
             <span class="toggle-pill"></span>
           </button>
-          <button id="population-toggle">
-            <span class="toggle-icon">👥</span>
+          <button id="population-toggle" class="tgl" data-overlay="population">
+            <span class="glyph toggle-icon"></span>
             Population
             <span class="toggle-pill"></span>
           </button>
@@ -95,22 +107,27 @@
     </div>
 
     <main>
-      <!-- Top row -->
+      <!-- Top row: map + side -->
       <section class="top-row">
-        <!-- Map -->
-        <div id="map-wrapper">
+        <div id="map-wrapper" class="map-card">
           <div id="map"></div>
+          <div class="map-foot">
+            <span class="pulse"></span>
+            <span><span id="visible-count">—</span> plants in view · drag to pan</span>
+          </div>
         </div>
 
-        <!-- Side panel -->
-        <div id="side-panel">
-          <!-- Detail card -->
-          <div class="panel-card panel-card--grow">
-            <h3>Plant Details</h3>
+        <div id="side-panel" class="side">
+          <!-- Plant detail -->
+          <div class="panel-card panel-card--grow card grow">
+            <div class="card-head">
+              <h3 class="card-title">Plant detail</h3>
+              <span class="card-meta" id="detail-meta">Hover a marker</span>
+            </div>
             <div id="detail-content">
               <p class="detail-placeholder">
-                Hover or click a marker on the map to see details about a power
-                plant.
+                Hover or click a marker on the map to read this plant's name,
+                fuel, capacity and country.
               </p>
             </div>
             <!-- Deforestation stats (visible only when overlay is on) -->
@@ -120,50 +137,61 @@
             </div>
           </div>
 
-          <!-- Fuel legend card -->
-          <div class="panel-card">
-            <h3>Fuel Type Legend</h3>
-            <div class="legend-items" id="legend">
+          <!-- Fuel legend -->
+          <div class="panel-card card">
+            <div class="card-head">
+              <h3 class="card-title">Fuel legend</h3>
+              <span class="card-meta">Marker color</span>
+            </div>
+            <div class="legend legend-items" id="legend">
               <!-- populated by JS -->
             </div>
           </div>
 
-          <!-- Deforestation legend card (hidden until overlay is on) -->
-          <div class="panel-card hidden" id="deforest-legend-card">
-            <h3>Deforestation Driver</h3>
-            <div class="legend-items" id="deforest-legend">
+          <!-- Deforestation legend (hidden until overlay is on) -->
+          <div class="panel-card card hidden" id="deforest-legend-card">
+            <div class="card-head">
+              <h3 class="card-title">Deforestation driver</h3>
+            </div>
+            <div class="legend legend-items" id="deforest-legend">
               <!-- populated by JS -->
             </div>
           </div>
 
-          <!-- Population legend card (hidden until overlay is on) -->
-          <div class="panel-card hidden" id="population-legend-card">
-            <h3>Population Density</h3>
-            <div class="legend-items" id="population-legend">
+          <!-- Population legend (hidden until overlay is on) -->
+          <div class="panel-card card hidden" id="population-legend-card">
+            <div class="card-head">
+              <h3 class="card-title">Population density</h3>
+            </div>
+            <div class="legend legend-items" id="population-legend">
               <!-- populated by JS -->
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Bottom charts -->
+      <!-- Charts -->
       <section class="bottom-row">
         <div class="chart-card">
-          <div class="chart-title">
-            Avg. Capacity by Fuel Type — current view
+          <div class="head">
+            <div class="chart-title title">Average capacity</div>
+            <div class="subtitle">By fuel type · current view · MW</div>
           </div>
           <svg
             id="plot-1"
-            viewBox="0 0 220 100"
+            viewBox="0 0 260 160"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title">Plant Count by Fuel Type — current view</div>
+          <div class="head">
+            <div class="chart-title title">Plant count</div>
+            <div class="subtitle">By fuel type · current view</div>
+          </div>
           <svg
             id="plot-2"
-            viewBox="0 0 220 100"
+            viewBox="0 0 260 160"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
         </div>
@@ -171,29 +199,48 @@
 
       <section class="bottom-row">
         <div class="chart-card">
-          <div class="chart-title">
-            Total Capacity by Fuel Type — current view
+          <div class="head">
+            <div class="chart-title title">Total capacity mix</div>
+            <div class="subtitle">Share of installed MW</div>
           </div>
-          <div class="chart-total">Total: <span id="total-mw">—</span></div>
+          <div class="chart-total total">
+            <span id="total-mw">—</span><small>MW</small>
+          </div>
           <svg
             id="plot-3"
-            viewBox="0 0 220 100"
+            viewBox="0 0 260 160"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
           <div id="pie-label" class="pie-label">Hover a slice</div>
         </div>
 
         <div class="chart-card">
-          <div class="chart-title">Fossil fuel % vs Deforestation — by country</div>
+          <div class="head">
+            <div class="chart-title title">Fossil share vs. forest loss</div>
+            <div class="subtitle">By country · click to filter</div>
+          </div>
           <svg
             id="plot-4"
-            viewBox="0 0 220 120"
+            viewBox="0 0 260 160"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
-          <div class="chart-hint">Click a dot to filter the map to that country</div>
+          <div class="chart-hint chart-foot">
+            Each dot is a country — click to filter the map
+          </div>
         </div>
       </section>
     </main>
+
+    <footer class="colophon">
+      <div class="pad">
+        <span>Simon Barras</span><span>·</span>
+        <span>Oliver Daoud</span><span>·</span>
+        <span>Phuc-hung Truong</span>
+      </div>
+      <div class="pad">
+        <span>Data: GPPDB · Hansen GFC · GHSL</span>
+      </div>
+    </footer>
 
     <script src="lib/leaflet.js"></script>
     <script src="lib/d3.min.js"></script>
