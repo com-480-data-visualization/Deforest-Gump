@@ -8,9 +8,19 @@ import {
   showDeforestStats,
   hideDeforestStats,
 } from "./ui.js";
-import { buildDeforestToggle, buildPopulationToggle, isDeforestVisible, getDeforestStats } from "./overlays.js";
+import {
+  buildDeforestToggle,
+  buildPopulationToggle,
+  isDeforestVisible,
+  getDeforestStats,
+} from "./overlays.js";
 import { buildMarkers, applyFilters } from "./map.js";
-import { EnergyHistogram, CountHistogram, CapacityPieChart, CorrelationScatter } from "./charts.js";
+import {
+  EnergyHistogram,
+  CountHistogram,
+  CapacityPieChart,
+  CorrelationScatter,
+} from "./charts.js";
 
 buildLegend();
 
@@ -97,7 +107,10 @@ Promise.all([
       }
     });
 
-    map.on("moveend", () => { refreshCharts(); refreshDeforestSidebar(); });
+    map.on("moveend", () => {
+      refreshCharts();
+      refreshDeforestSidebar();
+    });
     map.fire("moveend");
   })
   .catch(() => hideLoading());

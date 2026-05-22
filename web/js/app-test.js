@@ -18,7 +18,12 @@ import {
 } from "./overlays.js";
 import { DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
-import { EnergyHistogram, CountHistogram, CapacityPieChart, CorrelationScatter } from "./charts.js";
+import {
+  EnergyHistogram,
+  CountHistogram,
+  CapacityPieChart,
+  CorrelationScatter,
+} from "./charts.js";
 
 buildLegend();
 
@@ -65,15 +70,19 @@ Promise.all([
     const countChart = new CountHistogram("plot-2", data);
     const pieChart = new CapacityPieChart("plot-3", data);
 
-    const scatter = new CorrelationScatter("plot-4", correlationData, (countryName) => {
-      const sel = document.getElementById("country-select");
-      if ([...sel.options].some((o) => o.value === countryName)) {
-        sel.value = countryName;
-      } else {
-        sel.value = "ALL";
-      }
-      onFilterChange();
-    });
+    const scatter = new CorrelationScatter(
+      "plot-4",
+      correlationData,
+      (countryName) => {
+        const sel = document.getElementById("country-select");
+        if ([...sel.options].some((o) => o.value === countryName)) {
+          sel.value = countryName;
+        } else {
+          sel.value = "ALL";
+        }
+        onFilterChange();
+      },
+    );
 
     function getViewArgs() {
       const b = map.getBounds();
@@ -111,7 +120,10 @@ Promise.all([
       }
     });
 
-    map.on("moveend", () => { refreshCharts(); refreshDeforestSidebar(); });
+    map.on("moveend", () => {
+      refreshCharts();
+      refreshDeforestSidebar();
+    });
     map.fire("moveend");
 
     wireGuidedViews();
@@ -133,8 +145,9 @@ function buildDriverChips() {
       ${shortLabel}`;
     chip.querySelector("input").addEventListener("change", (e) => {
       chip.classList.toggle("checked", e.target.checked);
-      const active = [...document.querySelectorAll("#driver-chips input:checked")]
-        .map((el) => +el.value);
+      const active = [
+        ...document.querySelectorAll("#driver-chips input:checked"),
+      ].map((el) => +el.value);
       setDeforestDriverFilter(active);
     });
     container.appendChild(chip);
@@ -146,8 +159,8 @@ function buildDriverChips() {
 function wireGuidedViews() {
   document.querySelectorAll(".act-card[data-lat]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const lat  = +btn.dataset.lat;
-      const lng  = +btn.dataset.lng;
+      const lat = +btn.dataset.lat;
+      const lng = +btn.dataset.lng;
       const zoom = +btn.dataset.zoom;
       map.flyTo([lat, lng], zoom, { duration: 1.5 });
 

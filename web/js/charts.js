@@ -35,9 +35,12 @@ export class CorrelationScatter {
     [0, 25, 50, 75, 100].forEach((v) => {
       gridG
         .append("line")
-        .attr("x1", 0).attr("x2", this.W)
-        .attr("y1", this.yS(v)).attr("y2", this.yS(v))
-        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+        .attr("x1", 0)
+        .attr("x2", this.W)
+        .attr("y1", this.yS(v))
+        .attr("y2", this.yS(v))
+        .attr("stroke", "#dde5dd")
+        .attr("stroke-width", 0.5);
     });
 
     // X axis ticks
@@ -52,9 +55,12 @@ export class CorrelationScatter {
         .text(d3.format("~s")(v));
       gridG
         .append("line")
-        .attr("x1", this.xS(v)).attr("x2", this.xS(v))
-        .attr("y1", 0).attr("y2", this.H)
-        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+        .attr("x1", this.xS(v))
+        .attr("x2", this.xS(v))
+        .attr("y1", 0)
+        .attr("y2", this.H)
+        .attr("stroke", "#dde5dd")
+        .attr("stroke-width", 0.5);
     });
 
     // Y axis ticks
@@ -121,7 +127,8 @@ export class CorrelationScatter {
       .style("cursor", "pointer")
       .on("mouseover", function (d) {
         d3.select(this)
-          .transition().duration(120)
+          .transition()
+          .duration(120)
           .attr("stroke", "#1c2e1c")
           .attr("stroke-width", 1.5)
           .attr("fill-opacity", 1);
@@ -138,7 +145,8 @@ export class CorrelationScatter {
       })
       .on("mouseout", function () {
         d3.select(this)
-          .transition().duration(120)
+          .transition()
+          .duration(120)
           .attr("stroke", "#fff")
           .attr("stroke-width", 0.6)
           .attr("fill-opacity", 0.75);
@@ -159,8 +167,8 @@ export class CorrelationScatter {
   _addKeyAnnotations() {
     const KEY = {
       "Russian Federation": "Russia",
-      "Brazil": "Brazil",
-      "Indonesia": "Indonesia",
+      Brazil: "Brazil",
+      Indonesia: "Indonesia",
       "Congo, The Democratic Republic of the": "DRC",
     };
     this.data
@@ -187,8 +195,10 @@ export class CorrelationScatter {
 
   /* Highlight a specific country's dot; pass "ALL" to reset. */
   highlightCountry(country) {
-    this.g.selectAll("circle.dot")
-      .transition().duration(200)
+    this.g
+      .selectAll("circle.dot")
+      .transition()
+      .duration(200)
       .attr("fill-opacity", (d) =>
         country === "ALL" || d.country === country ? 0.85 : 0.12,
       )
@@ -274,12 +284,16 @@ class BarChart {
     const yTicks = this.yS.ticks(4);
 
     const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
-    yLines.enter()
+    yLines
+      .enter()
       .append("line")
       .attr("class", "y-grid")
-      .attr("x1", 0).attr("x2", this.W)
-      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
-      .attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d))
+      .attr("x1", 0)
+      .attr("x2", this.W)
+      .attr("stroke", "#dde5dd")
+      .attr("stroke-width", 0.5)
+      .attr("y1", (d) => this.yS(d))
+      .attr("y2", (d) => this.yS(d))
       .merge(yLines)
       .transition(t)
       .attr("y1", (d) => this.yS(d))
@@ -287,7 +301,8 @@ class BarChart {
     yLines.exit().remove();
 
     const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
-    yTickTexts.enter()
+    yTickTexts
+      .enter()
       .append("text")
       .attr("class", "tick y-tick")
       .attr("x", -4)
@@ -318,7 +333,8 @@ class BarChart {
     const bars = this.g.selectAll("rect.bar").data(barData);
 
     // Enter: bars start collapsed at baseline
-    bars.enter()
+    bars
+      .enter()
       .append("rect")
       .attr("class", "bar")
       .attr("x", (d) => xS(d.fuel))
@@ -345,11 +361,15 @@ class BarChart {
           .attr("visibility", "visible");
       })
       .on("mouseout", function (d) {
-        d3.select(this).attr("opacity", activeFuels.includes(d.fuel) ? 0.85 : 0.2);
+        d3.select(this).attr(
+          "opacity",
+          activeFuels.includes(d.fuel) ? 0.85 : 0.2,
+        );
         hoverLabel.attr("visibility", "hidden");
       });
 
-    merged.transition(t)
+    merged
+      .transition(t)
       .attr("y", (d) => yS(d.val))
       .attr("height", (d) => H - yS(d.val));
 
@@ -369,14 +389,22 @@ export class EnergyHistogram extends BarChart {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
-    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry)
-      .forEach((d) => {
-        const fuel = normalizeFuel(d.fuel);
-        sums[fuel] += d.capacity || 0;
-        counts[fuel]++;
-      });
+    this._filterData(
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      activeFuels,
+      activeCountry,
+    ).forEach((d) => {
+      const fuel = normalizeFuel(d.fuel);
+      sums[fuel] += d.capacity || 0;
+      counts[fuel]++;
+    });
 
-    const rawAvg = FUELS.map((f) => (counts[f] === 0 ? 0 : sums[f] / counts[f]));
+    const rawAvg = FUELS.map((f) =>
+      counts[f] === 0 ? 0 : sums[f] / counts[f],
+    );
     const mx = Math.max(...rawAvg, 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
     this._updateYGrid();
@@ -396,8 +424,16 @@ export class CountHistogram extends BarChart {
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
-    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry)
-      .forEach((d) => { counts[normalizeFuel(d.fuel)]++; });
+    this._filterData(
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      activeFuels,
+      activeCountry,
+    ).forEach((d) => {
+      counts[normalizeFuel(d.fuel)]++;
+    });
 
     const mx = Math.max(...Object.values(counts), 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
@@ -425,14 +461,18 @@ export class CapacityPieChart {
       .attr("transform", `translate(${m.left + W / 2},${m.top + H / 2})`);
 
     this.arc = d3.arc().innerRadius(0).outerRadius(this.R);
-    this.pie = d3.pie().value((d) => d.value).sort(null);
+    this.pie = d3
+      .pie()
+      .value((d) => d.value)
+      .sort(null);
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
     this.data.forEach((d) => {
-      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng) return;
+      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng)
+        return;
       if (activeCountry !== "ALL" && d.country !== activeCountry) return;
       const fuel = normalizeFuel(d.fuel);
       if (!activeFuels.includes(fuel)) return;
@@ -450,10 +490,13 @@ export class CapacityPieChart {
     const slices = this.g.selectAll("path.slice").data(this.pie(pieData));
 
     // Enter: initialise _current for the tween to interpolate from
-    slices.enter()
+    slices
+      .enter()
       .append("path")
       .attr("class", "slice")
-      .each(function (d) { this._current = d; })
+      .each(function (d) {
+        this._current = d;
+      })
       .attr("d", arc)
       .attr("stroke", "#fff")
       .attr("stroke-width", 0.5);
@@ -469,17 +512,20 @@ export class CapacityPieChart {
         if (d.data.value === 0) return;
         d3.select(this).transition().duration(120).attr("opacity", 1);
         const pct = ((d.data.value / total) * 100).toFixed(1);
-        pieLabel.textContent =
-          `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
+        pieLabel.textContent = `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
       })
       .on("mouseout", function (d) {
-        d3.select(this).transition().duration(120)
+        d3.select(this)
+          .transition()
+          .duration(120)
           .attr("opacity", activeFuels.includes(d.data.fuel) ? 0.85 : 0.2);
         pieLabel.textContent = "Hover a slice";
       });
 
     // Smooth arc tween on every update
-    merged.transition().duration(T)
+    merged
+      .transition()
+      .duration(T)
       .attrTween("d", function (d) {
         const interp = d3.interpolate(this._current, d);
         this._current = interp(1);

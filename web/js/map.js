@@ -16,8 +16,12 @@ export function buildMarkers(map, data, renderer, getNearest = null) {
       weight: 0.8,
       fillOpacity: 0.75,
     });
-    m.on("click", () => showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null));
-    m.on("mouseover", () => showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null));
+    m.on("click", () =>
+      showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null),
+    );
+    m.on("mouseover", () =>
+      showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null),
+    );
     m.on("mouseout", clearDetail);
     m.plantData = d;
     m.addTo(map);

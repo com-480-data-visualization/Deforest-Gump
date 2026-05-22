@@ -6,8 +6,8 @@ import { showToast } from "./ui.js";
 let deforestMap = null;
 let deforestLayer = null;
 let deforestVisible = false;
-let deforestFeatures = [];          // all features — used for stats + nearest lookup
-let deforestGeoJSON = null;         // cached raw GeoJSON so re-toggle skips re-fetch
+let deforestFeatures = []; // all features — used for stats + nearest lookup
+let deforestGeoJSON = null; // cached raw GeoJSON so re-toggle skips re-fetch
 let deforestActiveDrivers = new Set([1, 2, 3, 4, 5]);
 
 export const isDeforestVisible = () => deforestVisible;
@@ -65,30 +65,38 @@ function buildDeforestLegend() {
 function buildDeforestLayerFromData(map, geojson) {
   deforestFeatures = geojson.features;
 
-  const visible = deforestActiveDrivers.size === 5
-    ? geojson.features
-    : geojson.features.filter((f) => deforestActiveDrivers.has(f.properties.driver));
+  const visible =
+    deforestActiveDrivers.size === 5
+      ? geojson.features
+      : geojson.features.filter((f) =>
+          deforestActiveDrivers.has(f.properties.driver),
+        );
 
-  deforestLayer = L.geoJSON({ type: "FeatureCollection", features: visible }, {
-    pointToLayer: (f, latlng) =>
-      L.circleMarker(latlng, {
-        radius: 4,
-        fillColor: DEFOREST_COLORS[f.properties.driver] ?? "#ccc",
-        fillOpacity: 0.55,
-        color: "transparent",
-        weight: 0,
-      }),
-    onEachFeature: (f, layer) => {
-      layer.bindTooltip(f.properties.cause, {
-        sticky: true,
-        className: "deforest-tooltip",
-      });
+  deforestLayer = L.geoJSON(
+    { type: "FeatureCollection", features: visible },
+    {
+      pointToLayer: (f, latlng) =>
+        L.circleMarker(latlng, {
+          radius: 4,
+          fillColor: DEFOREST_COLORS[f.properties.driver] ?? "#ccc",
+          fillOpacity: 0.55,
+          color: "transparent",
+          weight: 0,
+        }),
+      onEachFeature: (f, layer) => {
+        layer.bindTooltip(f.properties.cause, {
+          sticky: true,
+          className: "deforest-tooltip",
+        });
+      },
     },
-  }).addTo(map);
+  ).addTo(map);
 
   buildDeforestLegend();
   document.getElementById("deforest-legend-card").classList.remove("hidden");
-  document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: true } }));
+  document.dispatchEvent(
+    new CustomEvent("deforest-toggled", { detail: { active: true } }),
+  );
 }
 
 function loadDeforestLayer(map) {
@@ -127,7 +135,9 @@ export function buildDeforestToggle(map) {
         deforestLayer = null;
       }
       document.getElementById("deforest-legend-card").classList.add("hidden");
-      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: false } }));
+      document.dispatchEvent(
+        new CustomEvent("deforest-toggled", { detail: { active: false } }),
+      );
     }
   });
 }
@@ -136,7 +146,7 @@ export function buildDeforestToggle(map) {
 
 let populationLayer = null;
 let populationVisible = false;
-let populationGeoJSON = null;       // cached so re-toggle skips re-fetch
+let populationGeoJSON = null; // cached so re-toggle skips re-fetch
 
 const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
 
@@ -151,9 +161,9 @@ function buildPopulationLegend() {
   if (!el || el.children.length > 0) return;
   const steps = [
     { label: "< 1 k", norm: 0.1 },
-    { label: "10 k",  norm: 0.4 },
+    { label: "10 k", norm: 0.4 },
     { label: "100 k", norm: 0.65 },
-    { label: "1 M+",  norm: 1.0 },
+    { label: "1 M+", norm: 1.0 },
   ];
   steps.forEach(({ label, norm }) => {
     el.insertAdjacentHTML(

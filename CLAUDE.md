@@ -9,7 +9,7 @@ COM-480 Data Visualization project at EPFL (team: Simon Barras, Oliver Daoud, Ph
 **Milestones:**
 - Milestone 1 (done): EDA and dataset analysis
 - Milestone 2 (17 Apr 2026, 5pm): 10% of grade — prototype website
-- Milestone 3 (29 May 2026, 5pm): 80% of grade — final website
+- Milestone 3 (29 May 2026, 5pm): 80% of grade — final website (**due Friday**)
 
 ## Datasets
 
@@ -47,17 +47,42 @@ Key visualization goals (from the milestone report):
 - Population density layer
 - Exploration of correlation between fossil fuel infrastructure and deforestation pressure
 
-## Milestone 2 Tasks (due 17 Apr 2026, 5pm)
+## Milestone 2 Tasks (done — 17 Apr 2026)
 
-**Two A4 pages describing the project goal:**
-- Include sketches of the visualizations planned for the final product
-- List tools for each visualization and which lectures (past or future) are needed
-- Break down the goal into independent pieces:
-  - Define the **core visualization (MVP)** required at the end
-  - List **extra/stretch ideas** that enhance the project but can be dropped
+- Two A4 pages with visualization sketches, tools, and MVP vs stretch breakdown
+- Functional prototype with basic skeleton of visualization/widgets
 
-**Functional project prototype review:**
-- Initial website running with the basic skeleton of the visualization/widgets
+## Milestone 3 Tasks (due 29 May 2026, 5pm)
+
+**1. GitHub repository with README**
+- Host code and data on GitHub (link to cloud storage if data is too large); include process book as a PDF
+- README explaining technical setup and intended usage
+- Code must be clean, manageable, and using latest practices
+
+**2. Screencast (2 min max)**
+- Demonstrate the viz in a fun, engaging, and impactful way
+- Focus on main contributions, not technical details
+
+**3. Process book (max 8 pages)**
+- Describe the path from original idea to final product
+- Explain challenges faced and design decisions made
+- Reuse and expand M1 sketches, explaining changes
+- Care about visual/design quality of the report
+- Include peer assessment: breakdown of each team member's contributions
+
+**Grading breakdown:**
+| Category | Weight |
+|----------|--------|
+| Visualization | 35% |
+| Technical Implementation | 15% |
+| Screencast | 25% |
+| Process book | 25% |
+
+Note: grades may vary per team member based on the process book and peer assessment.
+
+**Late policy:**
+- < 24h late: 80% of milestone grade
+- < 48h late: 70% of milestone grade
 
 ## Architecture Notes
 

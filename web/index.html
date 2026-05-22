@@ -4,11 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Deforest Gump</title>
-    <meta name="author" content="Simon Barras, Oliver Daoud, Phuc-hung Truong" />
+    <meta
+      name="author"
+      content="Simon Barras, Oliver Daoud, Phuc-hung Truong"
+    />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="lib/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
 
@@ -29,8 +35,16 @@
         color: var(--ink-3);
         margin-bottom: 20px;
       }
-      .story-rule { flex: 1; height: 1px; background: var(--rule); }
-      .story-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .story-rule {
+        flex: 1;
+        height: 1px;
+        background: var(--rule);
+      }
+      .story-acts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
       .act-card {
         display: flex;
         align-items: flex-start;
@@ -41,9 +55,14 @@
         padding: 16px 16px 16px 18px;
         text-align: left;
         cursor: pointer;
-        transition: border-color .2s, background .2s;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
       }
-      .act-card:hover { border-color: var(--forest-2); background: var(--bg); }
+      .act-card:hover {
+        border-color: var(--forest-2);
+        background: var(--bg);
+      }
       .act-num {
         font-family: var(--serif);
         font-size: 26px;
@@ -51,11 +70,22 @@
         line-height: 1;
         flex-shrink: 0;
         min-width: 20px;
-        transition: color .2s;
+        transition: color 0.2s;
       }
-      .act-card:hover .act-num { color: var(--ink-3); }
-      .act-body { flex: 1; min-width: 0; }
-      .act-title { display: block; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+      .act-card:hover .act-num {
+        color: var(--ink-3);
+      }
+      .act-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .act-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 2px;
+      }
       .act-country {
         display: block;
         font-size: 11px;
@@ -63,15 +93,24 @@
         letter-spacing: 0.04em;
         margin-bottom: 8px;
       }
-      .act-desc { font-size: 12px; color: var(--ink-2); line-height: 1.55; }
+      .act-desc {
+        font-size: 12px;
+        color: var(--ink-2);
+        line-height: 1.55;
+      }
       .act-arrow {
         font-size: 16px;
         color: var(--ink-4);
         flex-shrink: 0;
         align-self: center;
-        transition: color .15s, transform .15s;
+        transition:
+          color 0.15s,
+          transform 0.15s;
       }
-      .act-card:hover .act-arrow { color: var(--forest-2); transform: translateX(3px); }
+      .act-card:hover .act-arrow {
+        color: var(--forest-2);
+        transform: translateX(3px);
+      }
 
       /* ── Deforestation driver chips ─────────────────────────────────────── */
       .driver-chip {
@@ -87,17 +126,38 @@
         color: var(--ink-2);
         cursor: pointer;
         user-select: none;
-        transition: all .15s ease;
+        transition: all 0.15s ease;
       }
-      .driver-chip input { display: none; }
-      .driver-chip .chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-      .driver-chip:hover { border-color: var(--rule-strong); color: var(--ink); }
-      .driver-chip.checked { background: var(--ink); border-color: var(--ink); color: #fff; }
-      .driver-chip.checked .chip-dot { box-shadow: 0 0 0 2px rgba(255,255,255,.15); }
+      .driver-chip input {
+        display: none;
+      }
+      .driver-chip .chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .driver-chip:hover {
+        border-color: var(--rule-strong);
+        color: var(--ink);
+      }
+      .driver-chip.checked {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+      .driver-chip.checked .chip-dot {
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+      }
 
       /* Driver chips group is hidden until deforestation overlay is active */
-      .driver-tool { transition: opacity .2s; }
-      .driver-tool.faded { opacity: 0.35; pointer-events: none; }
+      .driver-tool {
+        transition: opacity 0.2s;
+      }
+      .driver-tool.faded {
+        opacity: 0.35;
+        pointer-events: none;
+      }
 
       /* ── Insight row ────────────────────────────────────────────────────── */
       .insight-row {
@@ -123,9 +183,22 @@
         min-width: 60px;
         letter-spacing: -0.02em;
       }
-      .insight-num--forest { color: var(--forest-2); font-size: 38px; }
-      .insight-text strong { display: block; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
-      .insight-text p { font-size: 13px; line-height: 1.55; color: var(--ink-2); }
+      .insight-num--forest {
+        color: var(--forest-2);
+        font-size: 38px;
+      }
+      .insight-text strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+      .insight-text p {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--ink-2);
+      }
 
       /* ── Planetary Boundaries panel ──────────────────────────────────────── */
       .pb-intro {
@@ -134,15 +207,23 @@
         line-height: 1.5;
         margin-bottom: 16px;
       }
-      .pb-item { margin-bottom: 16px; }
-      .pb-item:last-of-type { margin-bottom: 0; }
+      .pb-item {
+        margin-bottom: 16px;
+      }
+      .pb-item:last-of-type {
+        margin-bottom: 0;
+      }
       .pb-item-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 6px;
       }
-      .pb-name { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+      .pb-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink-2);
+      }
       .pb-badge {
         font-size: 9px;
         font-weight: 700;
@@ -151,8 +232,14 @@
         padding: 2px 7px;
         border-radius: 3px;
       }
-      .pb-badge--warn { background: #fef3c7; color: #92400e; }
-      .pb-badge--exceeded { background: #fee2e2; color: #b91c1c; }
+      .pb-badge--warn {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .pb-badge--exceeded {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
       .pb-bar-track {
         height: 5px;
         background: var(--rule);
@@ -165,17 +252,24 @@
         height: 100%;
         border-radius: 3px;
         background: var(--accent);
-        transition: width .6s ease;
+        transition: width 0.6s ease;
       }
-      .pb-bar-fill--exceeded { background: #ef4444; }
+      .pb-bar-fill--exceeded {
+        background: #ef4444;
+      }
       .pb-bar-limit {
         position: absolute;
-        top: -3px; bottom: -3px;
+        top: -3px;
+        bottom: -3px;
         width: 2px;
         background: var(--ink);
         border-radius: 1px;
       }
-      .pb-note { font-size: 10px; color: var(--ink-3); letter-spacing: 0.03em; }
+      .pb-note {
+        font-size: 10px;
+        color: var(--ink-3);
+        letter-spacing: 0.03em;
+      }
       .pb-footer {
         margin-top: 14px;
         font-size: 11px;
@@ -187,8 +281,12 @@
       }
 
       @media (max-width: 1100px) {
-        .story-acts { grid-template-columns: 1fr; }
-        .insight-row { grid-template-columns: 1fr; }
+        .story-acts {
+          grid-template-columns: 1fr;
+        }
+        .insight-row {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -219,10 +317,10 @@
         <div class="lede-eyebrow">A data essay on energy &amp; forests</div>
         <h2>Where energy <em>meets</em> the forest.</h2>
         <p class="lede-sub">
-          Fossil-fuel infrastructure and deforestation share the same map — but the
-          relationship is more complex than it looks. Browse 30 000+ power plants
-          and 500 000+ deforestation pixels across 148 countries, follow the three
-          guided stories below, then explore freely.
+          Fossil-fuel infrastructure and deforestation share the same map — but
+          the relationship is more complex than it looks. Browse 30 000+ power
+          plants and 500 000+ deforestation pixels across 148 countries, follow
+          the three guided stories below, then explore freely.
         </p>
       </div>
       <div class="lede-stats">
@@ -250,13 +348,19 @@
         <span class="story-rule"></span>
       </div>
       <div class="story-acts">
-
         <button class="act-card" data-lat="-5" data-lng="-55" data-zoom="5">
           <span class="act-num">I</span>
           <div class="act-body">
             <strong class="act-title">Amazon Basin</strong>
-            <span class="act-country">Brazil · 15% fossil share · dominant fuel: Hydro</span>
-            <p class="act-desc">Commodity-driven deforestation dominates — not energy. Brazil's grid runs mostly on hydropower, yet the Amazon loses millions of hectares each year to soy farms and cattle ranching. High deforestation ≠ high fossil fuels.</p>
+            <span class="act-country"
+              >Brazil · 15% fossil share · dominant fuel: Hydro</span
+            >
+            <p class="act-desc">
+              Commodity-driven deforestation dominates — not energy. Brazil's
+              grid runs mostly on hydropower, yet the Amazon loses millions of
+              hectares each year to soy farms and cattle ranching. High
+              deforestation ≠ high fossil fuels.
+            </p>
           </div>
           <span class="act-arrow">→</span>
         </button>
@@ -265,8 +369,15 @@
           <span class="act-num">II</span>
           <div class="act-body">
             <strong class="act-title">Borneo / SE Asia</strong>
-            <span class="act-country">Indonesia · 88% fossil share · dominant fuel: Coal</span>
-            <p class="act-desc">Here the two pressures converge. Coal power fuels rapid industrialisation while palm oil expansion and logging clear one of the planet's most biodiverse forests. The highest fossil share meets significant deforestation.</p>
+            <span class="act-country"
+              >Indonesia · 88% fossil share · dominant fuel: Coal</span
+            >
+            <p class="act-desc">
+              Here the two pressures converge. Coal power fuels rapid
+              industrialisation while palm oil expansion and logging clear one
+              of the planet's most biodiverse forests. The highest fossil share
+              meets significant deforestation.
+            </p>
           </div>
           <span class="act-arrow">→</span>
         </button>
@@ -275,12 +386,18 @@
           <span class="act-num">III</span>
           <div class="act-body">
             <strong class="act-title">Congo Basin</strong>
-            <span class="act-country">DRC · 1% fossil share · dominant fuel: Hydro</span>
-            <p class="act-desc">Massive deforestation despite almost zero fossil-fuel infrastructure. Shifting agriculture and subsistence farming drive forest loss here — a stark reminder that energy mix alone cannot explain deforestation pressure.</p>
+            <span class="act-country"
+              >DRC · 1% fossil share · dominant fuel: Hydro</span
+            >
+            <p class="act-desc">
+              Massive deforestation despite almost zero fossil-fuel
+              infrastructure. Shifting agriculture and subsistence farming drive
+              forest loss here — a stark reminder that energy mix alone cannot
+              explain deforestation pressure.
+            </p>
           </div>
           <span class="act-arrow">→</span>
         </button>
-
       </div>
     </section>
 
@@ -340,7 +457,10 @@
           <div id="map"></div>
           <div class="map-foot">
             <span class="pulse"></span>
-            <span><span id="visible-count">—</span> plants in view · drag to pan</span>
+            <span
+              ><span id="visible-count">—</span> plants in view · drag to
+              pan</span
+            >
           </div>
         </div>
 
@@ -354,8 +474,8 @@
             <div id="detail-content">
               <p class="detail-placeholder">
                 Hover or click a marker on the map to read this plant's name,
-                fuel, capacity, country — and, when the deforestation overlay
-                is active, its nearest deforestation driver.
+                fuel, capacity, country — and, when the deforestation overlay is
+                active, its nearest deforestation driver.
               </p>
             </div>
             <!-- Deforestation stats (visible only when overlay is on) -->
@@ -412,7 +532,10 @@
                 <!-- safe limit marker at ~69% of bar width = 1.0 / 1.45 -->
                 <div class="pb-bar-limit" style="left: 69%"></div>
               </div>
-              <div class="pb-note">~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂ from fossil fuels</div>
+              <div class="pb-note">
+                ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂
+                from fossil fuels
+              </div>
             </div>
 
             <div class="pb-item">
@@ -421,11 +544,17 @@
                 <span class="pb-badge pb-badge--exceeded">Exceeded</span>
               </div>
               <div class="pb-bar-track">
-                <div class="pb-bar-fill pb-bar-fill--exceeded" style="width: 100%"></div>
+                <div
+                  class="pb-bar-fill pb-bar-fill--exceeded"
+                  style="width: 100%"
+                ></div>
                 <!-- safe limit at 25% of bar = 25% HANPP threshold -->
                 <div class="pb-bar-limit" style="left: 25%"></div>
               </div>
-              <div class="pb-note">&gt;75% HANPP observed · safe boundary: &lt;25% — driven by land use change and deforestation</div>
+              <div class="pb-note">
+                &gt;75% HANPP observed · safe boundary: &lt;25% — driven by land
+                use change and deforestation
+              </div>
             </div>
 
             <p class="pb-footer">
@@ -441,15 +570,29 @@
         <div class="insight-card">
           <div class="insight-num">15%</div>
           <div class="insight-text">
-            <strong>of plants are coal or oil — yet they generate 62% of global electricity.</strong>
-            <p>This density mismatch means a handful of large thermal plants pull roads, labour, and industrial activity deep into vulnerable landscapes. Use the <em>Fuel</em> filter to isolate coal and see where they concentrate.</p>
+            <strong
+              >of plants are coal or oil — yet they generate 62% of global
+              electricity.</strong
+            >
+            <p>
+              This density mismatch means a handful of large thermal plants pull
+              roads, labour, and industrial activity deep into vulnerable
+              landscapes. Use the <em>Fuel</em> filter to isolate coal and see
+              where they concentrate.
+            </p>
           </div>
         </div>
         <div class="insight-card">
           <div class="insight-num insight-num--forest">≠</div>
           <div class="insight-text">
             <strong>Energy type does not predict deforestation cause.</strong>
-            <p>The scatter below shows no simple correlation: Brazil has a hydro-dominated grid yet suffers the world's second-largest deforestation count, driven by commodity agriculture. Use the <em>Deforestation driver</em> filter to isolate the specific pressure in each region.</p>
+            <p>
+              The scatter below shows no simple correlation: Brazil has a
+              hydro-dominated grid yet suffers the world's second-largest
+              deforestation count, driven by commodity agriculture. Use the
+              <em>Deforestation driver</em> filter to isolate the specific
+              pressure in each region.
+            </p>
           </div>
         </div>
       </section>
@@ -461,7 +604,11 @@
             <div class="chart-title title">Average capacity</div>
             <div class="subtitle">By fuel type · current view · MW</div>
           </div>
-          <svg id="plot-1" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg
+            id="plot-1"
+            viewBox="0 0 260 160"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
         </div>
 
         <div class="chart-card">
@@ -469,7 +616,11 @@
             <div class="chart-title title">Plant count</div>
             <div class="subtitle">By fuel type · current view</div>
           </div>
-          <svg id="plot-2" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg
+            id="plot-2"
+            viewBox="0 0 260 160"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
         </div>
       </section>
 
@@ -482,18 +633,29 @@
           <div class="chart-total total">
             <span id="total-mw">—</span><small>MW</small>
           </div>
-          <svg id="plot-3" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg
+            id="plot-3"
+            viewBox="0 0 260 160"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
           <div id="pie-label" class="pie-label">Hover a slice</div>
         </div>
 
         <div class="chart-card">
           <div class="head">
             <div class="chart-title title">Fossil share vs. forest loss</div>
-            <div class="subtitle">By country · click a dot to filter the map</div>
+            <div class="subtitle">
+              By country · click a dot to filter the map
+            </div>
           </div>
-          <svg id="plot-4" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg
+            id="plot-4"
+            viewBox="0 0 260 160"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
           <div class="chart-hint chart-foot">
-            Dot size = plant count · color = dominant fuel · labeled outliers annotated
+            Dot size = plant count · color = dominant fuel · labeled outliers
+            annotated
           </div>
         </div>
       </section>
@@ -501,12 +663,14 @@
 
     <footer class="colophon">
       <div class="pad">
-        <span>Simon Barras</span><span>·</span>
-        <span>Oliver Daoud</span><span>·</span>
+        <span>Simon Barras</span><span>·</span> <span>Oliver Daoud</span
+        ><span>·</span>
         <span>Phuc-hung Truong</span>
       </div>
       <div class="pad">
-        <span>Data: GPPDB · Hansen GFC · GHSL · Stockholm Resilience Centre</span>
+        <span
+          >Data: GPPDB · Hansen GFC · GHSL · Stockholm Resilience Centre</span
+        >
       </div>
     </footer>
 
@@ -517,7 +681,9 @@
     <script>
       /* Sync driver-tool fade with deforest toggle state */
       document.addEventListener("deforest-toggled", (e) => {
-        document.getElementById("driver-tool").classList.toggle("faded", !e.detail.active);
+        document
+          .getElementById("driver-tool")
+          .classList.toggle("faded", !e.detail.active);
       });
     </script>
   </body>

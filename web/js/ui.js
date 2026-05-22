@@ -1,4 +1,11 @@
-import { FUELS, FUEL_COLORS, normalizeFuel, escapeHtml, DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
+import {
+  FUELS,
+  FUEL_COLORS,
+  normalizeFuel,
+  escapeHtml,
+  DEFOREST_COLORS,
+  DEFOREST_CAUSES,
+} from "./constants.js";
 
 /* ── Intro banner ─────────────────────────────────────────────────────────── */
 
@@ -126,7 +133,8 @@ export function showDeforestStats(driverCounts) {
 
   const total = Object.values(driverCounts).reduce((s, v) => s + v, 0);
   if (total === 0) {
-    rowsEl.innerHTML = '<p class="detail-placeholder">No deforestation pixels in current view.</p>';
+    rowsEl.innerHTML =
+      '<p class="detail-placeholder">No deforestation pixels in current view.</p>';
     statsEl.classList.remove("hidden");
     return;
   }
