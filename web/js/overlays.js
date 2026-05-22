@@ -3,9 +3,12 @@ import { showToast } from "./ui.js";
 
 /* ── Deforestation Overlay ────────────────────────────────────────────────── */
 
+let deforestMap = null;
 let deforestLayer = null;
 let deforestVisible = false;
-let deforestFeatures = [];
+let deforestFeatures = [];          // all features — used for stats + nearest lookup
+let deforestGeoJSON = null;         // cached raw GeoJSON so re-toggle skips re-fetch
+let deforestActiveDrivers = new Set([1, 2, 3, 4, 5]);
 
 export const isDeforestVisible = () => deforestVisible;
 
@@ -18,6 +21,31 @@ export function getDeforestStats(south, north, west, east) {
     if (counts[d] !== undefined) counts[d]++;
   });
   return counts;
+}
+
+/* Returns nearest deforestation pixel within radiusDeg degrees, or null. */
+export function getNearestDeforestDriver(lat, lng, radiusDeg = 2) {
+  if (!deforestFeatures.length) return null;
+  let nearest = null;
+  let minDist = Infinity;
+  const r2 = radiusDeg * radiusDeg;
+  for (const f of deforestFeatures) {
+    const [fLng, fLat] = f.geometry.coordinates;
+    const dist = (fLat - lat) ** 2 + (fLng - lng) ** 2;
+    if (dist < minDist && dist < r2) {
+      minDist = dist;
+      nearest = f.properties;
+    }
+  }
+  return nearest;
+}
+
+/* Update which drivers are shown on the overlay without re-fetching. */
+export function setDeforestDriverFilter(activeDrivers) {
+  deforestActiveDrivers = new Set(activeDrivers);
+  if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
+  if (deforestLayer) deforestMap.removeLayer(deforestLayer);
+  buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
 }
 
 function buildDeforestLegend() {
@@ -34,35 +62,48 @@ function buildDeforestLegend() {
   });
 }
 
+function buildDeforestLayerFromData(map, geojson) {
+  deforestFeatures = geojson.features;
+
+  const visible = deforestActiveDrivers.size === 5
+    ? geojson.features
+    : geojson.features.filter((f) => deforestActiveDrivers.has(f.properties.driver));
+
+  deforestLayer = L.geoJSON({ type: "FeatureCollection", features: visible }, {
+    pointToLayer: (f, latlng) =>
+      L.circleMarker(latlng, {
+        radius: 4,
+        fillColor: DEFOREST_COLORS[f.properties.driver] ?? "#ccc",
+        fillOpacity: 0.55,
+        color: "transparent",
+        weight: 0,
+      }),
+    onEachFeature: (f, layer) => {
+      layer.bindTooltip(f.properties.cause, {
+        sticky: true,
+        className: "deforest-tooltip",
+      });
+    },
+  }).addTo(map);
+
+  buildDeforestLegend();
+  document.getElementById("deforest-legend-card").classList.remove("hidden");
+  document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: true } }));
+}
+
 function loadDeforestLayer(map) {
+  if (deforestGeoJSON) {
+    buildDeforestLayerFromData(map, deforestGeoJSON);
+    return;
+  }
   fetch("data/8-deforestation.geojson")
     .then((r) => {
       if (!r.ok) throw new Error(r.statusText);
       return r.json();
     })
     .then((geojson) => {
-      deforestFeatures = geojson.features;
-
-      deforestLayer = L.geoJSON(geojson, {
-        pointToLayer: (f, latlng) =>
-          L.circleMarker(latlng, {
-            radius: 4,
-            fillColor: DEFOREST_COLORS[f.properties.driver] ?? "#ccc",
-            fillOpacity: 0.55,
-            color: "transparent",
-            weight: 0,
-          }),
-        onEachFeature: (f, layer) => {
-          layer.bindTooltip(f.properties.cause, {
-            sticky: true,
-            className: "deforest-tooltip",
-          });
-        },
-      }).addTo(map);
-
-      buildDeforestLegend();
-      document.getElementById("deforest-legend-card").classList.remove("hidden");
-      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: true } }));
+      deforestGeoJSON = geojson;
+      buildDeforestLayerFromData(map, geojson);
     })
     .catch((err) => {
       console.warn("Deforestation layer failed to load:", err.message);
@@ -73,6 +114,7 @@ function loadDeforestLayer(map) {
 }
 
 export function buildDeforestToggle(map) {
+  deforestMap = map;
   const btn = document.getElementById("deforest-toggle");
   btn.addEventListener("click", () => {
     deforestVisible = !deforestVisible;
@@ -84,7 +126,6 @@ export function buildDeforestToggle(map) {
         map.removeLayer(deforestLayer);
         deforestLayer = null;
       }
-      deforestFeatures = [];
       document.getElementById("deforest-legend-card").classList.add("hidden");
       document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: false } }));
     }
@@ -95,6 +136,7 @@ export function buildDeforestToggle(map) {
 
 let populationLayer = null;
 let populationVisible = false;
+let populationGeoJSON = null;       // cached so re-toggle skips re-fetch
 
 const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
 
@@ -107,7 +149,6 @@ function formatPop(n) {
 function buildPopulationLegend() {
   const el = document.getElementById("population-legend");
   if (!el || el.children.length > 0) return;
-
   const steps = [
     { label: "< 1 k", norm: 0.1 },
     { label: "10 k",  norm: 0.4 },
@@ -125,32 +166,41 @@ function buildPopulationLegend() {
   });
 }
 
+function buildPopLayerFromData(map, geojson) {
+  populationLayer = L.geoJSON(geojson, {
+    pointToLayer: (f, latlng) =>
+      L.circleMarker(latlng, {
+        radius: 3,
+        fillColor: popColorScale(f.properties.norm),
+        fillOpacity: 0.6,
+        color: "transparent",
+        weight: 0,
+      }),
+    onEachFeature: (f, layer) => {
+      layer.bindTooltip(`${formatPop(f.properties.pop)} people`, {
+        sticky: true,
+        className: "deforest-tooltip",
+      });
+    },
+  }).addTo(map);
+
+  buildPopulationLegend();
+  document.getElementById("population-legend-card").classList.remove("hidden");
+}
+
 function loadPopulationLayer(map) {
+  if (populationGeoJSON) {
+    buildPopLayerFromData(map, populationGeoJSON);
+    return;
+  }
   fetch("data/5-population.geojson")
     .then((r) => {
       if (!r.ok) throw new Error(r.statusText);
       return r.json();
     })
     .then((geojson) => {
-      populationLayer = L.geoJSON(geojson, {
-        pointToLayer: (f, latlng) =>
-          L.circleMarker(latlng, {
-            radius: 3,
-            fillColor: popColorScale(f.properties.norm),
-            fillOpacity: 0.6,
-            color: "transparent",
-            weight: 0,
-          }),
-        onEachFeature: (f, layer) => {
-          layer.bindTooltip(`${formatPop(f.properties.pop)} people`, {
-            sticky: true,
-            className: "deforest-tooltip",
-          });
-        },
-      }).addTo(map);
-
-      buildPopulationLegend();
-      document.getElementById("population-legend-card").classList.remove("hidden");
+      populationGeoJSON = geojson;
+      buildPopLayerFromData(map, geojson);
     })
     .catch((err) => {
       console.warn("Population layer failed to load:", err.message);

@@ -1,3 +1,4 @@
 .vscode/
 data/tif/5-gridded-population.tif
+***.DS_Store
 .venv/

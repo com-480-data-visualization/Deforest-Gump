@@ -77,8 +77,17 @@ export function buildCountrySelect(countries, onChange) {
 
 /* ── Detail Panel ─────────────────────────────────────────────────────────── */
 
-export function showDetail(plant) {
+export function showDetail(plant, nearestDriver = null) {
   const fuelColor = normalizeFuel(plant.fuel);
+  const deforestRow = nearestDriver
+    ? `<div class="detail-row">
+        <span class="detail-key">Nearby deforest.</span>
+        <span class="detail-val">
+          <span class="detail-fuel-dot" style="background:${DEFOREST_COLORS[nearestDriver.driver]}"></span>
+          ${escapeHtml(nearestDriver.cause)}
+        </span>
+      </div>`
+    : "";
   document.getElementById("detail-content").innerHTML = `
     <div class="detail-name">${escapeHtml(plant.name)}</div>
     <div class="detail-row">
@@ -99,7 +108,8 @@ export function showDetail(plant) {
     <div class="detail-row">
       <span class="detail-key">Coordinates</span>
       <span class="detail-val">${plant.lat.toFixed(2)}°, ${plant.lng.toFixed(2)}°</span>
-    </div>`;
+    </div>
+    ${deforestRow}`;
 }
 
 export function clearDetail() {

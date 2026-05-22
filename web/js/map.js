@@ -1,7 +1,10 @@
 import { FUEL_COLORS, normalizeFuel, getRadius } from "./constants.js";
 import { showDetail, clearDetail } from "./ui.js";
 
-export function buildMarkers(map, data, renderer) {
+/* getNearest(lat, lng) is an optional callback returning the nearest
+   deforestation driver object (or null) — injected from app to avoid
+   a circular dependency with overlays.js. */
+export function buildMarkers(map, data, renderer, getNearest = null) {
   const markers = [];
   data.forEach((d) => {
     if (isNaN(d.lat) || isNaN(d.lng)) return;
@@ -13,8 +16,8 @@ export function buildMarkers(map, data, renderer) {
       weight: 0.8,
       fillOpacity: 0.75,
     });
-    m.on("click", () => showDetail(d));
-    m.on("mouseover", () => showDetail(d));
+    m.on("click", () => showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null));
+    m.on("mouseover", () => showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null));
     m.on("mouseout", clearDetail);
     m.plantData = d;
     m.addTo(map);

@@ -151,6 +151,57 @@ export class CorrelationScatter {
       .ease(d3.easeCubicOut)
       .attr("r", (d) => rS(d.plant_count))
       .attr("fill-opacity", 0.75);
+
+    this._addKeyAnnotations();
+  }
+
+  /* Annotate the four most story-relevant outliers directly on the chart. */
+  _addKeyAnnotations() {
+    const KEY = {
+      "Russian Federation": "Russia",
+      "Brazil": "Brazil",
+      "Indonesia": "Indonesia",
+      "Congo, The Democratic Republic of the": "DRC",
+    };
+    this.data
+      .filter((d) => KEY[d.country])
+      .forEach((d) => {
+        const cx = this.xS(d.deforest_count);
+        const cy = this.yS(d.fossil_pct);
+        const label = KEY[d.country];
+        const anchor = cx > this.W * 0.62 ? "end" : "start";
+        const dx = anchor === "end" ? -7 : 7;
+        this.g
+          .append("text")
+          .attr("class", "scatter-annotation")
+          .attr("x", cx + dx)
+          .attr("y", cy - 5)
+          .attr("text-anchor", anchor)
+          .attr("font-size", "7px")
+          .attr("fill", "#3a4a3a")
+          .attr("font-weight", "700")
+          .attr("pointer-events", "none")
+          .text(label);
+      });
+  }
+
+  /* Highlight a specific country's dot; pass "ALL" to reset. */
+  highlightCountry(country) {
+    this.g.selectAll("circle.dot")
+      .transition().duration(200)
+      .attr("fill-opacity", (d) =>
+        country === "ALL" || d.country === country ? 0.85 : 0.12,
+      )
+      .attr("r", (d) => {
+        const base = this.rS(d.plant_count);
+        return country !== "ALL" && d.country === country ? base * 1.5 : base;
+      })
+      .attr("stroke-width", (d) =>
+        country !== "ALL" && d.country === country ? 1.5 : 0.6,
+      )
+      .attr("stroke", (d) =>
+        country !== "ALL" && d.country === country ? "#1c2e1c" : "#fff",
+      );
   }
 }
 
