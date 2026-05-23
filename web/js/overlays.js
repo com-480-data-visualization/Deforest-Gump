@@ -62,6 +62,98 @@ function buildDeforestLegend() {
   });
 }
 
+/* Half the 10km cell in degrees (≈ 0.0964° / 2). Used to project each
+   point to its four cell corners so adjacent pixels share edges. */
+const CELL_HALF = 0.0482;
+
+class DeforestCanvasLayer extends L.Layer {
+  constructor(features) {
+    super();
+    this._features = features; // [{lng, lat, driver}]
+    this._draw = this._draw.bind(this);
+    this._hide = this._hide.bind(this);
+  }
+
+  onAdd(map) {
+    this._map = map;
+    if (!map.getPane("deforestPane")) {
+      const pane = map.createPane("deforestPane");
+      pane.style.zIndex = "360";
+      pane.style.pointerEvents = "none";
+    }
+    this._canvas = L.DomUtil.create(
+      "canvas",
+      "leaflet-zoom-hide",
+      map.getPane("deforestPane"),
+    );
+    map.on("movestart zoomstart", this._hide);
+    map.on("viewreset moveend zoomend resize", this._draw);
+    this._draw();
+    return this;
+  }
+
+  onRemove(map) {
+    L.DomUtil.remove(this._canvas);
+    map.off("movestart zoomstart", this._hide);
+    map.off("viewreset moveend zoomend resize", this._draw);
+    return this;
+  }
+
+  _hide() {
+    this._canvas.style.display = "none";
+  }
+
+  _draw() {
+    const map = this._map;
+    const bounds = map.getBounds().pad(0.05);
+    const nw = map.latLngToLayerPoint(bounds.getNorthWest());
+    const se = map.latLngToLayerPoint(bounds.getSouthEast());
+    const w = Math.max(1, se.x - nw.x);
+    const h = Math.max(1, se.y - nw.y);
+
+    const canvas = this._canvas;
+    canvas.style.display = "";
+    canvas.width = w;
+    canvas.height = h;
+    L.DomUtil.setPosition(canvas, nw);
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, w, h);
+
+    // At low zoom, expand cells so nearby clusters merge into solid regions.
+    // At zoom ≥ 5 it falls back to the actual 10km footprint.
+    const zoom = map.getZoom();
+    const cellHalf = Math.max(CELL_HALF, 0.4 / Math.pow(2, zoom - 2));
+
+    const vb = map.getBounds();
+    const s = vb.getSouth() - cellHalf;
+    const n = vb.getNorth() + cellHalf;
+    const we = vb.getWest() - cellHalf;
+    const e = vb.getEast() + cellHalf;
+
+    // Group by driver so we batch fillRect calls per color
+    const byDriver = {};
+    for (const f of this._features) {
+      if (f.lat < s || f.lat > n || f.lng < we || f.lng > e) continue;
+      (byDriver[f.driver] ??= []).push(f);
+    }
+
+    for (const [driver, pts] of Object.entries(byDriver)) {
+      const color = DEFOREST_COLORS[driver] ?? "#ccc";
+      ctx.fillStyle = color + "aa"; // ~67% opacity
+      for (const p of pts) {
+        const nwPt = map.latLngToLayerPoint([p.lat + cellHalf, p.lng - cellHalf]);
+        const sePt = map.latLngToLayerPoint([p.lat - cellHalf, p.lng + cellHalf]);
+        const x = nwPt.x - nw.x;
+        const y = nwPt.y - nw.y;
+        const rw = Math.max(1, sePt.x - nwPt.x);
+        const rh = Math.max(1, sePt.y - nwPt.y);
+        ctx.fillRect(x, y, rw, rh);
+      }
+    }
+  }
+}
+
 function buildDeforestLayerFromData(map, geojson) {
   deforestFeatures = geojson.features;
 
@@ -72,25 +164,15 @@ function buildDeforestLayerFromData(map, geojson) {
           deforestActiveDrivers.has(f.properties.driver),
         );
 
-  deforestLayer = L.geoJSON(
-    { type: "FeatureCollection", features: visible },
-    {
-      pointToLayer: (f, latlng) =>
-        L.circleMarker(latlng, {
-          radius: 4,
-          fillColor: DEFOREST_COLORS[f.properties.driver] ?? "#ccc",
-          fillOpacity: 0.55,
-          color: "transparent",
-          weight: 0,
-        }),
-      onEachFeature: (f, layer) => {
-        layer.bindTooltip(f.properties.cause, {
-          sticky: true,
-          className: "deforest-tooltip",
-        });
-      },
-    },
-  ).addTo(map);
+  const pts = visible.map((f) => ({
+    lng: f.geometry.coordinates[0],
+    lat: f.geometry.coordinates[1],
+    driver: f.properties.driver,
+    cause: f.properties.cause,
+  }));
+
+  deforestLayer = new DeforestCanvasLayer(pts);
+  deforestLayer.addTo(map);
 
   buildDeforestLegend();
   document.getElementById("deforest-legend-card").classList.remove("hidden");
