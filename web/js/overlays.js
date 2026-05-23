@@ -135,7 +135,8 @@ class DeforestCanvasLayer extends L.Layer {
     const cellHalf = Math.max(CELL_HALF, 0.4 / Math.pow(2, zoom - 2));
 
     // Compute pixel radius from cell half-degree at the center latitude
-    const centerLat = (map.getBounds().getSouth() + map.getBounds().getNorth()) / 2;
+    const centerLat =
+      (map.getBounds().getSouth() + map.getBounds().getNorth()) / 2;
     const sampleNW = map.latLngToLayerPoint([centerLat + cellHalf, -cellHalf]);
     const sampleSE = map.latLngToLayerPoint([centerLat - cellHalf, cellHalf]);
     const r = Math.max(2, (sampleSE.x - sampleNW.x) / 2);
@@ -270,7 +271,8 @@ function buildPopulationLegend() {
   const bar = document.createElement("canvas");
   bar.width = 160;
   bar.height = 10;
-  bar.style.cssText = "display:block;border-radius:3px;margin-bottom:6px;width:100%;";
+  bar.style.cssText =
+    "display:block;border-radius:3px;margin-bottom:6px;width:100%;";
   const bCtx = bar.getContext("2d");
   for (let x = 0; x < 160; x++) {
     bCtx.fillStyle = popColorScale(x / 159);
@@ -301,9 +303,7 @@ function buildPopulationLegend() {
   });
 }
 
-/* Dot-map layer: each population point rendered as a circle colored by density.
-   Cleaner than a blurred heatmap — density is encoded in color, not radius. */
-class PopDotLayer extends L.Layer {
+class PopHeatmapLayer extends L.Layer {
   constructor(pts, colorScale) {
     super();
     this._pts = pts; // [{lat, lng, norm}]
@@ -314,6 +314,8 @@ class PopDotLayer extends L.Layer {
 
   onAdd(map) {
     this._map = map;
+    // Dedicated pane at z-index 350 — below overlayPane (400) where plant
+    // markers live, so the heatmap never covers them.
     if (!map.getPane("populationPane")) {
       const pane = map.createPane("populationPane");
       pane.style.zIndex = "350";
@@ -343,7 +345,9 @@ class PopDotLayer extends L.Layer {
 
   _draw() {
     const map = this._map;
-    const bounds = map.getBounds().pad(0.05);
+
+    // Size and position the canvas to cover the visible area in layer coords
+    const bounds = map.getBounds().pad(0.1);
     const nw = map.latLngToLayerPoint(bounds.getNorthWest());
     const se = map.latLngToLayerPoint(bounds.getSouthEast());
     const w = Math.max(1, se.x - nw.x);
@@ -353,52 +357,65 @@ class PopDotLayer extends L.Layer {
     canvas.style.display = "";
     canvas.width = w;
     canvas.height = h;
-    L.DomUtil.setPosition(canvas, nw);
+    L.DomUtil.setPosition(canvas, nw); // positions via CSS transform in layer space
 
     const zoom = map.getZoom();
-    const r = Math.max(2, Math.min(8, zoom));
+    const radius = Math.max(15, Math.min(40, zoom * 4));
 
     const vb = map.getBounds();
     const visible = this._pts.filter(
       (p) =>
-        p.lat >= vb.getSouth() - 0.5 &&
-        p.lat <= vb.getNorth() + 0.5 &&
-        p.lng >= vb.getWest() - 0.5 &&
-        p.lng <= vb.getEast() + 0.5,
+        p.lat >= vb.getSouth() - 1 &&
+        p.lat <= vb.getNorth() + 1 &&
+        p.lng >= vb.getWest() - 1 &&
+        p.lng <= vb.getEast() + 1,
     );
 
-    // Subsample if too many points
     const MAX = 8000;
     const step = visible.length > MAX ? Math.ceil(visible.length / MAX) : 1;
     const pts = step > 1 ? visible.filter((_, i) => i % step === 0) : visible;
 
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, w, h);
+    const outCtx = canvas.getContext("2d");
+    outCtx.clearRect(0, 0, w, h);
     if (pts.length === 0) return;
 
-    // Bucket by color (20 buckets) and draw one batched path per bucket
-    const buckets = {};
-    for (const p of pts) {
-      const key = Math.round(p.norm * 19); // 0–19
-      (buckets[key] ??= []).push(p);
-    }
+    // Pass 1 — accumulate intensity blobs using additive alpha blending
+    const off = document.createElement("canvas");
+    off.width = w;
+    off.height = h;
+    const ctx = off.getContext("2d");
+    ctx.globalCompositeOperation = "lighter";
 
-    // Draw low-density first, high-density on top
-    for (const key of Object.keys(buckets).sort((a, b) => +a - +b)) {
-      const norm = +key / 19;
-      const c = d3.color(this._color(norm));
-      const opacity = 0.55 + norm * 0.35; // 0.55 → 0.90 as density increases
-      ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${opacity.toFixed(2)})`;
+    pts.forEach((p) => {
+      // Draw in layer space offset by nw so (0,0) = canvas top-left
+      const lp = map.latLngToLayerPoint([p.lat, p.lng]);
+      const x = lp.x - nw.x;
+      const y = lp.y - nw.y;
+      const a = p.norm * 0.5 + 0.05;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+      grad.addColorStop(0, `rgba(0,0,0,${a.toFixed(3)})`);
+      grad.addColorStop(0.4, `rgba(0,0,0,${(a * 0.35).toFixed(3)})`);
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      for (const p of buckets[key]) {
-        const lp = map.latLngToLayerPoint([p.lat, p.lng]);
-        const x = lp.x - nw.x;
-        const y = lp.y - nw.y;
-        ctx.moveTo(x + r, y);
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-      }
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
+    });
+
+    // Pass 2 — map accumulated alpha → color scale
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha === 0) continue;
+      const t = Math.min(1, alpha / 255);
+      const c = d3.color(this._color(t));
+      data[i] = c.r;
+      data[i + 1] = c.g;
+      data[i + 2] = c.b;
+      data[i + 3] = Math.round(t * 210);
     }
+    outCtx.putImageData(imageData, 0, 0);
   }
 }
 
@@ -409,7 +426,7 @@ function buildPopLayerFromData(map, geojson) {
     norm: f.properties.norm,
   }));
 
-  populationLayer = new PopDotLayer(pts, popColorScale);
+  populationLayer = new PopHeatmapLayer(pts, popColorScale);
   populationLayer.addTo(map);
 
   buildPopulationLegend();
