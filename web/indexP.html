@@ -19,102 +19,6 @@
     <link rel="stylesheet" href="style.css" />
 
     <style>
-      /* ── Hero wrapper (full-viewport narrative) ─────────────────────────── */
-      .hero-section {
-        background: var(--surface);
-        border-bottom: 2px solid var(--rule);
-        min-height: calc(100vh - 64px);
-        display: flex;
-        flex-direction: column;
-      }
-      .hero-section #intro-banner.lede {
-        flex: 1;
-        border-bottom: 1px solid var(--rule);
-        /* keep existing transition but override border */
-      }
-      .hero-section #intro-banner.intro-hidden {
-        flex: 0;
-      }
-      .scroll-cue {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        padding: 18px 28px;
-        font-size: 10.5px;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--ink-3);
-        border-top: 1px solid var(--rule);
-      }
-      .scroll-cue-icon {
-        display: inline-block;
-        animation: bounce-down 1.9s ease-in-out infinite;
-      }
-      @keyframes bounce-down {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(5px); }
-      }
-
-      /* ── Sticky toolbar ───────────────────────────────────────────────── */
-      #controls.toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 900;
-        box-shadow: 0 1px 8px rgba(24, 26, 23, 0.06);
-      }
-
-      /* ── Sticky map ───────────────────────────────────────────────────── */
-      main .top-row {
-        align-items: flex-start !important;
-      }
-      #map-wrapper.map-card {
-        position: sticky;
-        top: 56px; /* below sticky toolbar */
-        align-self: flex-start;
-      }
-      #map {
-        height: calc(100vh - 140px);
-        min-height: 420px;
-        max-height: 780px;
-      }
-
-      /* ── Toggle button hover fix ──────────────────────────────────────── */
-      #deforest-toggle.tgl:hover,
-      #population-toggle.tgl:hover {
-        background: var(--paper-tint) !important;
-        color: var(--ink) !important;
-      }
-      #deforest-toggle.tgl:hover .glyph {
-        background: repeating-linear-gradient(
-          45deg,
-          var(--moss) 0 2px,
-          transparent 2px 4px
-        ) !important;
-      }
-      #population-toggle.tgl:hover .glyph {
-        background:
-          radial-gradient(circle at 30% 30%, var(--moss) 0 1.5px, transparent 1.5px),
-          radial-gradient(circle at 70% 70%, var(--moss) 0 1.5px, transparent 1.5px),
-          var(--paper-tint) !important;
-      }
-
-      /* ── Story source citation ────────────────────────────────────────── */
-      .act-source {
-        font-size: 10px;
-        color: var(--ink-4);
-        margin-top: 8px;
-        padding-top: 7px;
-        border-top: 1px solid var(--rule);
-        letter-spacing: 0.02em;
-        line-height: 1.45;
-      }
-      .act-source em {
-        font-style: normal;
-        color: var(--ink-3);
-        font-weight: 500;
-      }
-
       /* ── Story section ──────────────────────────────────────────────────── */
       .story-section {
         background: var(--surface);
@@ -407,9 +311,6 @@
       </div>
     </header>
 
-    <!-- ── Hero section (full-viewport narrative + story cards) ─────────── -->
-    <div class="hero-section">
-
     <!-- Lede / intro banner -->
     <section id="intro-banner" class="lede">
       <div class="lede-text">
@@ -460,10 +361,6 @@
               hectares each year to soy farms and cattle ranching. High
               deforestation ≠ high fossil fuels.
             </p>
-            <p class="act-source">
-              <em>Sources:</em> INPE PRODES (2023) · Gibbs et al., <em>Science</em> 2010 ·
-              Global Forest Watch
-            </p>
           </div>
           <span class="act-arrow">→</span>
         </button>
@@ -480,10 +377,6 @@
               industrialisation while palm oil expansion and logging clear one
               of the planet's most biodiverse forests. The highest fossil share
               meets significant deforestation.
-            </p>
-            <p class="act-source">
-              <em>Sources:</em> Hansen et al., <em>Science</em> 2013 · Vijay et al.,
-              <em>PLOS ONE</em> 2016 · IEA World Energy Statistics 2022
             </p>
           </div>
           <span class="act-arrow">→</span>
@@ -502,24 +395,11 @@
               forest loss here — a stark reminder that energy mix alone cannot
               explain deforestation pressure.
             </p>
-            <p class="act-source">
-              <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina et al.,
-              <em>Sci. Advances</em> 2018 · SE4All Africa Hub
-            </p>
           </div>
           <span class="act-arrow">→</span>
         </button>
       </div>
     </section>
-
-      <!-- Scroll indicator -->
-      <div class="scroll-cue">
-        <span class="scroll-cue-icon">↓</span>
-        Scroll to explore the interactive map
-        <span class="scroll-cue-icon">↓</span>
-      </div>
-
-    </div><!-- /.hero-section -->
 
     <!-- ── Toolbar / filters ─────────────────────────────────────────────── -->
     <div id="controls" class="toolbar">

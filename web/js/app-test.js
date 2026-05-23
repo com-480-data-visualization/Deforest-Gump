@@ -15,6 +15,7 @@ import {
   getDeforestStats,
   getNearestDeforestDriver,
   setDeforestDriverFilter,
+  setDeforestCountryFilter,
 } from "./overlays.js";
 import { DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
@@ -104,12 +105,29 @@ Promise.all([
       showDeforestStats(getDeforestStats(s, n, w, e));
     }
 
+    function getCountryBbox(country) {
+      if (country === "ALL") return null;
+      const pts = data.filter(
+        (d) => d.country === country && !isNaN(d.lat) && !isNaN(d.lng),
+      );
+      if (!pts.length) return null;
+      const lats = pts.map((d) => d.lat);
+      const lngs = pts.map((d) => d.lng);
+      return {
+        s: Math.min(...lats) - 1,
+        n: Math.max(...lats) + 1,
+        w: Math.min(...lngs) - 2,
+        e: Math.max(...lngs) + 2,
+      };
+    }
+
     function onFilterChange() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
       applyFilters(markers, fuels, country);
       refreshCharts();
       scatter.highlightCountry(country);
+      setDeforestCountryFilter(getCountryBbox(country));
     }
 
     document.addEventListener("deforest-toggled", (e) => {

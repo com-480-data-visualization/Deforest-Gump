@@ -9,6 +9,7 @@ let deforestVisible = false;
 let deforestFeatures = []; // all features — used for stats + nearest lookup
 let deforestGeoJSON = null; // cached raw GeoJSON so re-toggle skips re-fetch
 let deforestActiveDrivers = new Set([1, 2, 3, 4, 5]);
+let deforestCountryBbox = null; // {s, n, w, e} or null for no country filter
 
 export const isDeforestVisible = () => deforestVisible;
 
@@ -43,6 +44,15 @@ export function getNearestDeforestDriver(lat, lng, radiusDeg = 2) {
 /* Update which drivers are shown on the overlay without re-fetching. */
 export function setDeforestDriverFilter(activeDrivers) {
   deforestActiveDrivers = new Set(activeDrivers);
+  if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
+  if (deforestLayer) deforestMap.removeLayer(deforestLayer);
+  buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
+}
+
+/* Filter deforestation to an approximate country bounding box.
+   Pass null to remove the filter. */
+export function setDeforestCountryFilter(bbox) {
+  deforestCountryBbox = bbox;
   if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
   if (deforestLayer) deforestMap.removeLayer(deforestLayer);
   buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
@@ -121,9 +131,14 @@ class DeforestCanvasLayer extends L.Layer {
     ctx.clearRect(0, 0, w, h);
 
     // At low zoom, expand cells so nearby clusters merge into solid regions.
-    // At zoom ≥ 5 it falls back to the actual 10km footprint.
     const zoom = map.getZoom();
     const cellHalf = Math.max(CELL_HALF, 0.4 / Math.pow(2, zoom - 2));
+
+    // Compute pixel radius from cell half-degree at the center latitude
+    const centerLat = (map.getBounds().getSouth() + map.getBounds().getNorth()) / 2;
+    const sampleNW = map.latLngToLayerPoint([centerLat + cellHalf, -cellHalf]);
+    const sampleSE = map.latLngToLayerPoint([centerLat - cellHalf, cellHalf]);
+    const r = Math.max(2, (sampleSE.x - sampleNW.x) / 2);
 
     const vb = map.getBounds();
     const s = vb.getSouth() - cellHalf;
@@ -131,7 +146,7 @@ class DeforestCanvasLayer extends L.Layer {
     const we = vb.getWest() - cellHalf;
     const e = vb.getEast() + cellHalf;
 
-    // Group by driver so we batch fillRect calls per color
+    // Group by driver so we batch arc calls per color (one path per color)
     const byDriver = {};
     for (const f of this._features) {
       if (f.lat < s || f.lat > n || f.lng < we || f.lng > e) continue;
@@ -140,27 +155,36 @@ class DeforestCanvasLayer extends L.Layer {
 
     for (const [driver, pts] of Object.entries(byDriver)) {
       const color = DEFOREST_COLORS[driver] ?? "#ccc";
-      ctx.fillStyle = color + "aa"; // ~67% opacity
+      ctx.fillStyle = color + "99"; // ~60% opacity
+      ctx.beginPath();
       for (const p of pts) {
-        const nwPt = map.latLngToLayerPoint([p.lat + cellHalf, p.lng - cellHalf]);
-        const sePt = map.latLngToLayerPoint([p.lat - cellHalf, p.lng + cellHalf]);
-        const x = nwPt.x - nw.x;
-        const y = nwPt.y - nw.y;
-        const rw = Math.max(1, sePt.x - nwPt.x);
-        const rh = Math.max(1, sePt.y - nwPt.y);
-        ctx.fillRect(x, y, rw, rh);
+        const pt = map.latLngToLayerPoint([p.lat, p.lng]);
+        const x = pt.x - nw.x;
+        const y = pt.y - nw.y;
+        ctx.moveTo(x + r, y);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
       }
+      ctx.fill();
     }
   }
 }
 
 function buildDeforestLayerFromData(map, geojson) {
-  deforestFeatures = geojson.features;
+  // Apply country bbox filter first, then driver filter
+  const bboxFiltered = deforestCountryBbox
+    ? geojson.features.filter((f) => {
+        const [lng, lat] = f.geometry.coordinates;
+        const { s, n, w, e } = deforestCountryBbox;
+        return lat >= s && lat <= n && lng >= w && lng <= e;
+      })
+    : geojson.features;
+
+  deforestFeatures = bboxFiltered;
 
   const visible =
     deforestActiveDrivers.size === 5
-      ? geojson.features
-      : geojson.features.filter((f) =>
+      ? bboxFiltered
+      : bboxFiltered.filter((f) =>
           deforestActiveDrivers.has(f.properties.driver),
         );
 
@@ -277,7 +301,9 @@ function buildPopulationLegend() {
   });
 }
 
-class PopHeatmapLayer extends L.Layer {
+/* Dot-map layer: each population point rendered as a circle colored by density.
+   Cleaner than a blurred heatmap — density is encoded in color, not radius. */
+class PopDotLayer extends L.Layer {
   constructor(pts, colorScale) {
     super();
     this._pts = pts; // [{lat, lng, norm}]
@@ -288,8 +314,6 @@ class PopHeatmapLayer extends L.Layer {
 
   onAdd(map) {
     this._map = map;
-    // Dedicated pane at z-index 350 — below overlayPane (400) where plant
-    // markers live, so the heatmap never covers them.
     if (!map.getPane("populationPane")) {
       const pane = map.createPane("populationPane");
       pane.style.zIndex = "350";
@@ -319,9 +343,7 @@ class PopHeatmapLayer extends L.Layer {
 
   _draw() {
     const map = this._map;
-
-    // Size and position the canvas to cover the visible area in layer coords
-    const bounds = map.getBounds().pad(0.1);
+    const bounds = map.getBounds().pad(0.05);
     const nw = map.latLngToLayerPoint(bounds.getNorthWest());
     const se = map.latLngToLayerPoint(bounds.getSouthEast());
     const w = Math.max(1, se.x - nw.x);
@@ -331,65 +353,52 @@ class PopHeatmapLayer extends L.Layer {
     canvas.style.display = "";
     canvas.width = w;
     canvas.height = h;
-    L.DomUtil.setPosition(canvas, nw); // positions via CSS transform in layer space
+    L.DomUtil.setPosition(canvas, nw);
 
     const zoom = map.getZoom();
-    const radius = Math.max(15, Math.min(40, zoom * 4));
+    const r = Math.max(2, Math.min(8, zoom));
 
     const vb = map.getBounds();
     const visible = this._pts.filter(
       (p) =>
-        p.lat >= vb.getSouth() - 1 &&
-        p.lat <= vb.getNorth() + 1 &&
-        p.lng >= vb.getWest() - 1 &&
-        p.lng <= vb.getEast() + 1,
+        p.lat >= vb.getSouth() - 0.5 &&
+        p.lat <= vb.getNorth() + 0.5 &&
+        p.lng >= vb.getWest() - 0.5 &&
+        p.lng <= vb.getEast() + 0.5,
     );
 
+    // Subsample if too many points
     const MAX = 8000;
     const step = visible.length > MAX ? Math.ceil(visible.length / MAX) : 1;
     const pts = step > 1 ? visible.filter((_, i) => i % step === 0) : visible;
 
-    const outCtx = canvas.getContext("2d");
-    outCtx.clearRect(0, 0, w, h);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, w, h);
     if (pts.length === 0) return;
 
-    // Pass 1 — accumulate intensity blobs using additive alpha blending
-    const off = document.createElement("canvas");
-    off.width = w;
-    off.height = h;
-    const ctx = off.getContext("2d");
-    ctx.globalCompositeOperation = "lighter";
-
-    pts.forEach((p) => {
-      // Draw in layer space offset by nw so (0,0) = canvas top-left
-      const lp = map.latLngToLayerPoint([p.lat, p.lng]);
-      const x = lp.x - nw.x;
-      const y = lp.y - nw.y;
-      const a = p.norm * 0.5 + 0.05;
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      grad.addColorStop(0, `rgba(0,0,0,${a.toFixed(3)})`);
-      grad.addColorStop(0.4, `rgba(0,0,0,${(a * 0.35).toFixed(3)})`);
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // Pass 2 — map accumulated alpha → color scale
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const alpha = data[i + 3];
-      if (alpha === 0) continue;
-      const t = Math.min(1, alpha / 255);
-      const c = d3.color(this._color(t));
-      data[i] = c.r;
-      data[i + 1] = c.g;
-      data[i + 2] = c.b;
-      data[i + 3] = Math.round(t * 210);
+    // Bucket by color (20 buckets) and draw one batched path per bucket
+    const buckets = {};
+    for (const p of pts) {
+      const key = Math.round(p.norm * 19); // 0–19
+      (buckets[key] ??= []).push(p);
     }
-    outCtx.putImageData(imageData, 0, 0);
+
+    // Draw low-density first, high-density on top
+    for (const key of Object.keys(buckets).sort((a, b) => +a - +b)) {
+      const norm = +key / 19;
+      const c = d3.color(this._color(norm));
+      const opacity = 0.55 + norm * 0.35; // 0.55 → 0.90 as density increases
+      ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${opacity.toFixed(2)})`;
+      ctx.beginPath();
+      for (const p of buckets[key]) {
+        const lp = map.latLngToLayerPoint([p.lat, p.lng]);
+        const x = lp.x - nw.x;
+        const y = lp.y - nw.y;
+        ctx.moveTo(x + r, y);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
   }
 }
 
@@ -400,7 +409,7 @@ function buildPopLayerFromData(map, geojson) {
     norm: f.properties.norm,
   }));
 
-  populationLayer = new PopHeatmapLayer(pts, popColorScale);
+  populationLayer = new PopDotLayer(pts, popColorScale);
   populationLayer.addTo(map);
 
   buildPopulationLegend();

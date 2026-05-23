@@ -337,6 +337,8 @@ class BarChart {
       .enter()
       .append("rect")
       .attr("class", "bar")
+      .attr("rx", 3)
+      .attr("ry", 3)
       .attr("x", (d) => xS(d.fuel))
       .attr("width", xS.bandwidth())
       .attr("fill", (d) => FUEL_COLORS[d.fuel])
@@ -347,13 +349,19 @@ class BarChart {
     const merged = this.g.selectAll("rect.bar");
 
     merged
+      .attr("rx", 3)
+      .attr("ry", 3)
       .attr("x", (d) => xS(d.fuel))
       .attr("width", xS.bandwidth())
       .attr("fill", (d) => FUEL_COLORS[d.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
+      .style("cursor", (d) => (d.val > 0 ? "pointer" : "default"))
       .on("mouseover", function (d) {
         if (d.val === 0) return;
-        d3.select(this).attr("opacity", 1);
+        d3.select(this)
+          .attr("opacity", 1)
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 1.5);
         hoverLabel
           .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
           .attr("y", yS(d.val) - 4)
@@ -361,10 +369,9 @@ class BarChart {
           .attr("visibility", "visible");
       })
       .on("mouseout", function (d) {
-        d3.select(this).attr(
-          "opacity",
-          activeFuels.includes(d.fuel) ? 0.85 : 0.2,
-        );
+        d3.select(this)
+          .attr("opacity", activeFuels.includes(d.fuel) ? 0.85 : 0.2)
+          .attr("stroke", "none");
         hoverLabel.attr("visibility", "hidden");
       });
 
@@ -460,7 +467,7 @@ export class CapacityPieChart {
       .append("g")
       .attr("transform", `translate(${m.left + W / 2},${m.top + H / 2})`);
 
-    this.arc = d3.arc().innerRadius(0).outerRadius(this.R);
+    this.arc = d3.arc().innerRadius(this.R * 0.42).outerRadius(this.R);
     this.pie = d3
       .pie()
       .value((d) => d.value)
