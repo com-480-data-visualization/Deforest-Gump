@@ -224,14 +224,23 @@ export function buildDeforestToggle(map) {
 
 /* ── Population Overlay ───────────────────────────────────────────────────── */
 
+let populationMap = null;
 let populationLayer = null;
 let populationVisible = false;
 let populationGeoJSON = null; // cached so re-toggle skips re-fetch
 let populationThreshold = 0; // norm value [0,1] — hide points below this
+let populationCountryIso3 = null; // ISO alpha-3 string or null for no filter
 
 export function setPopulationThreshold(t) {
   populationThreshold = t;
   if (populationLayer) populationLayer._draw();
+}
+
+export function setPopulationCountryFilter(iso3) {
+  populationCountryIso3 = iso3;
+  if (!populationVisible || !populationGeoJSON || !populationMap) return;
+  if (populationLayer) populationMap.removeLayer(populationLayer);
+  buildPopLayerFromData(populationMap, populationGeoJSON);
 }
 
 const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
@@ -360,7 +369,11 @@ class PopHeatmapLayer extends L.Layer {
 }
 
 function buildPopLayerFromData(map, geojson) {
-  const pts = geojson.features.map((f) => ({
+  const source = populationCountryIso3
+    ? geojson.features.filter((f) => f.properties.cc3 === populationCountryIso3)
+    : geojson.features;
+
+  const pts = source.map((f) => ({
     lat: f.geometry.coordinates[1],
     lng: f.geometry.coordinates[0],
     norm: f.properties.norm,
@@ -393,6 +406,7 @@ function loadPopulationLayer(map) {
 }
 
 export function buildPopulationToggle(map) {
+  populationMap = map;
   const btn = document.getElementById("population-toggle");
   btn.addEventListener("click", () => {
     populationVisible = !populationVisible;

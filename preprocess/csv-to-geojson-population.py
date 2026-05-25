@@ -13,6 +13,8 @@ import csv
 import json
 import math
 import os
+import pycountry
+import reverse_geocoder as rg
 
 INPUT_CSV = os.path.join(os.path.dirname(__file__), "../data/csv/5-gridded-population.csv")
 OUTPUT_GEOJSON = os.path.join(os.path.dirname(__file__), "../web/data/5-population.geojson")
@@ -32,7 +34,7 @@ def main():
 
     log_max = math.log(max_val + 1)
 
-    features = []
+    sampled_rows = []
     counter = 0
 
     with open(INPUT_CSV, newline="", encoding="utf-8") as f:
@@ -46,21 +48,35 @@ def main():
             if counter % SAMPLE_EVERY != 0:
                 continue
 
-            lon = round(float(row["lon"]), 4)
-            lat = round(float(row["lat"]), 4)
-            norm = round(math.log(v + 1) / log_max, 3)
+            sampled_rows.append(row)
 
-            features.append({
-                "type": "Feature",
-                "properties": {
-                    "pop": round(v),
-                    "norm": norm,
-                },
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [lon, lat],
-                },
-            })
+    # Batch reverse-geocode only the sampled points (much faster than full CSV)
+    coords = [(float(r["lat"]), float(r["lon"])) for r in sampled_rows]
+    geocoded = rg.search(coords)
+
+    features = []
+    for row, geo in zip(sampled_rows, geocoded):
+        v = float(row["value"])
+        lon = round(float(row["lon"]), 4)
+        lat = round(float(row["lat"]), 4)
+        norm = round(math.log(v + 1) / log_max, 3)
+
+        cc2 = geo["cc"]
+        country = pycountry.countries.get(alpha_2=cc2)
+        cc3 = country.alpha_3 if country else ""
+
+        features.append({
+            "type": "Feature",
+            "properties": {
+                "pop": round(v),
+                "norm": norm,
+                "cc3": cc3,
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [lon, lat],
+            },
+        })
 
     geojson = {
         "type": "FeatureCollection",
