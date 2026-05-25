@@ -66,7 +66,19 @@ Promise.all([
     const getNearest = (lat, lng) =>
       isDeforestVisible() ? getNearestDeforestDriver(lat, lng) : null;
 
-    const markers = buildMarkers(map, data, renderer, getNearest);
+    const { markers, group: plantsGroup } = buildMarkers(map, data, renderer, getNearest);
+
+    let plantsVisible = true;
+    const plantsBtn = document.getElementById("plants-toggle");
+    plantsBtn.addEventListener("click", () => {
+      plantsVisible = !plantsVisible;
+      plantsBtn.classList.toggle("active", plantsVisible);
+      if (plantsVisible) {
+        plantsGroup.addTo(map);
+      } else {
+        map.removeLayer(plantsGroup);
+      }
+    });
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
     const pieChart = new CapacityPieChart("plot-3", data);

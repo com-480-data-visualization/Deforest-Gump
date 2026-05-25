@@ -5,6 +5,7 @@ import { showDetail, clearDetail } from "./ui.js";
    deforestation driver object (or null) — injected from app to avoid
    a circular dependency with overlays.js. */
 export function buildMarkers(map, data, renderer, getNearest = null) {
+  const group = L.layerGroup().addTo(map);
   const markers = [];
   data.forEach((d) => {
     if (isNaN(d.lat) || isNaN(d.lng)) return;
@@ -24,10 +25,10 @@ export function buildMarkers(map, data, renderer, getNearest = null) {
     );
     m.on("mouseout", clearDetail);
     m.plantData = d;
-    m.addTo(map);
+    m.addTo(group);
     markers.push(m);
   });
-  return markers;
+  return { markers, group };
 }
 
 export function applyFilters(markers, activeFuels, activeCountry) {

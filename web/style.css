@@ -377,6 +377,7 @@ header.masthead {
   border-radius: 8px;
   padding: 3px;
 }
+#plants-toggle.tgl,
 #deforest-toggle.tgl,
 #population-toggle.tgl {
   display: inline-flex;
@@ -391,10 +392,14 @@ header.masthead {
   color: var(--ink-2);
   transition: all 0.15s;
 }
+#plants-toggle.tgl:hover,
 #deforest-toggle.tgl:hover,
 #population-toggle.tgl:hover {
   background: var(--paper-tint);
   color: var(--ink);
+}
+#plants-toggle.tgl:hover .glyph {
+  background: radial-gradient(circle at 50% 40%, var(--moss) 0 2.5px, transparent 2.5px 4px, var(--moss) 4px 5px);
 }
 #deforest-toggle.tgl:hover .glyph {
   background: repeating-linear-gradient(
@@ -410,12 +415,17 @@ header.masthead {
     var(--paper-tint);
 }
 
+#plants-toggle .glyph,
 #deforest-toggle .glyph,
 #population-toggle .glyph {
   width: 10px;
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+#plants-toggle .glyph {
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, var(--rule-strong) 0 2.5px, transparent 2.5px 4px, var(--rule-strong) 4px 5px);
 }
 #deforest-toggle .glyph {
   background: repeating-linear-gradient(
@@ -440,13 +450,17 @@ header.masthead {
 }
 
 /* Hide the legacy emoji + pill switch — segmented control replaces it */
+#plants-toggle .toggle-icon:not(.glyph),
 #deforest-toggle .toggle-icon:not(.glyph),
 #population-toggle .toggle-icon:not(.glyph),
+#plants-toggle > .toggle-pill,
 #deforest-toggle > .toggle-pill,
 #population-toggle > .toggle-pill {
   display: none;
 }
 
+#plants-toggle.active,
+#plants-toggle.on,
 #deforest-toggle.active,
 #deforest-toggle.on,
 #population-toggle.active,
@@ -454,6 +468,10 @@ header.masthead {
   background: var(--ink);
   color: #fff;
   border-color: transparent;
+}
+#plants-toggle.active .glyph,
+#plants-toggle.on .glyph {
+  background: radial-gradient(circle at 50% 40%, #60a5fa 0 2.5px, transparent 2.5px 4px, #60a5fa 4px 5px);
 }
 #deforest-toggle.active .glyph,
 #deforest-toggle.on .glyph {
