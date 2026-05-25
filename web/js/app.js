@@ -13,7 +13,11 @@ import {
   buildPopulationToggle,
   isDeforestVisible,
   getDeforestStats,
+  getNearestDeforestDriver,
+  setDeforestDriverFilter,
+  setDeforestCountryFilter,
 } from "./overlays.js";
+import { DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
 import {
   EnergyHistogram,
@@ -56,21 +60,30 @@ Promise.all([
     const countries = new Set(data.map((d) => d.country).filter(Boolean));
     buildCountrySelect(countries, onFilterChange);
     buildFuelChips(onFilterChange);
+    buildDriverChips();
 
-    const markers = buildMarkers(map, data, renderer);
+    /* getNearest callback: injected into buildMarkers to avoid circular dep */
+    const getNearest = (lat, lng) =>
+      isDeforestVisible() ? getNearestDeforestDriver(lat, lng) : null;
+
+    const markers = buildMarkers(map, data, renderer, getNearest);
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
     const pieChart = new CapacityPieChart("plot-3", data);
 
-    new CorrelationScatter("plot-4", correlationData, (countryName) => {
-      const sel = document.getElementById("country-select");
-      if ([...sel.options].some((o) => o.value === countryName)) {
-        sel.value = countryName;
-      } else {
-        sel.value = "ALL";
-      }
-      onFilterChange();
-    });
+    const scatter = new CorrelationScatter(
+      "plot-4",
+      correlationData,
+      (countryName) => {
+        const sel = document.getElementById("country-select");
+        if ([...sel.options].some((o) => o.value === countryName)) {
+          sel.value = countryName;
+        } else {
+          sel.value = "ALL";
+        }
+        onFilterChange();
+      },
+    );
 
     function getViewArgs() {
       const b = map.getBounds();
@@ -92,11 +105,29 @@ Promise.all([
       showDeforestStats(getDeforestStats(s, n, w, e));
     }
 
+    function getCountryBbox(country) {
+      if (country === "ALL") return null;
+      const pts = data.filter(
+        (d) => d.country === country && !isNaN(d.lat) && !isNaN(d.lng),
+      );
+      if (!pts.length) return null;
+      const lats = pts.map((d) => d.lat);
+      const lngs = pts.map((d) => d.lng);
+      return {
+        s: Math.min(...lats) - 1,
+        n: Math.max(...lats) + 1,
+        w: Math.min(...lngs) - 2,
+        e: Math.max(...lngs) + 2,
+      };
+    }
+
     function onFilterChange() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
       applyFilters(markers, fuels, country);
       refreshCharts();
+      scatter.highlightCountry(country);
+      setDeforestCountryFilter(getCountryBbox(country));
     }
 
     document.addEventListener("deforest-toggled", (e) => {
@@ -112,5 +143,50 @@ Promise.all([
       refreshDeforestSidebar();
     });
     map.fire("moveend");
+
+    wireGuidedViews();
   })
   .catch(() => hideLoading());
+
+/* ── Driver filter chips ────────────────────────────────────────────────── */
+
+function buildDriverChips() {
+  const container = document.getElementById("driver-chips");
+  if (!container) return;
+  Object.entries(DEFOREST_CAUSES).forEach(([driver, label]) => {
+    const shortLabel = label.split(" ")[0]; // "Commodity", "Shifting", "Forestry"…
+    const chip = document.createElement("label");
+    chip.className = "driver-chip checked";
+    chip.innerHTML = `
+      <input type="checkbox" value="${driver}" checked>
+      <span class="chip-dot" style="background:${DEFOREST_COLORS[driver]}"></span>
+      ${shortLabel}`;
+    chip.querySelector("input").addEventListener("change", (e) => {
+      chip.classList.toggle("checked", e.target.checked);
+      const active = [
+        ...document.querySelectorAll("#driver-chips input:checked"),
+      ].map((el) => +el.value);
+      setDeforestDriverFilter(active);
+    });
+    container.appendChild(chip);
+  });
+}
+
+/* ── Guided view buttons ────────────────────────────────────────────────── */
+
+function wireGuidedViews() {
+  document.querySelectorAll(".act-card[data-lat]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lat = +btn.dataset.lat;
+      const lng = +btn.dataset.lng;
+      const zoom = +btn.dataset.zoom;
+      map.flyTo([lat, lng], zoom, { duration: 1.5 });
+
+      /* Auto-enable deforestation overlay for context */
+      const deforestBtn = document.getElementById("deforest-toggle");
+      if (!deforestBtn.classList.contains("active")) {
+        deforestBtn.click();
+      }
+    });
+  });
+}

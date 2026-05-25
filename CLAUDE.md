@@ -90,3 +90,11 @@ Note: grades may vary per team member based on the process book and peer assessm
 - The deforestation and population CSVs share a 10km² grid, so spatial joins are by lat/lon coordinates
 - Power plants CSV is independent and joined geographically or by country code
 - For D3 maps, GeoJSON conversion of the raster data is preferred over raw CSV
+
+## Code Separation Rules
+
+Keep concerns strictly separated — never put CSS or JS inline in `index.html`:
+
+- **Styles** → `web/style.css` only. No `<style>` blocks in `index.html`.
+- **Logic** → `web/js/*.js` files only. No `<script>` blocks with application code in `index.html` (external library `<script src="...">` tags are fine).
+- `index.html` contains only markup and `<link>`/`<script src>` references.

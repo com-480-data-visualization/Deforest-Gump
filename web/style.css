@@ -255,6 +255,10 @@ header.masthead {
   flex-wrap: wrap;
   align-items: center;
   gap: 28px;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  box-shadow: 0 1px 8px rgba(24, 26, 23, 0.06);
 }
 .tool,
 .control-group {
@@ -389,7 +393,21 @@ header.masthead {
 }
 #deforest-toggle.tgl:hover,
 #population-toggle.tgl:hover {
-  color: var(--ink-3);
+  background: var(--paper-tint);
+  color: var(--ink);
+}
+#deforest-toggle.tgl:hover .glyph {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--moss) 0 2px,
+    transparent 2px 4px
+  );
+}
+#population-toggle.tgl:hover .glyph {
+  background:
+    radial-gradient(circle at 30% 30%, var(--moss) 0 1.5px, transparent 1.5px),
+    radial-gradient(circle at 70% 70%, var(--moss) 0 1.5px, transparent 1.5px),
+    var(--paper-tint);
 }
 
 #deforest-toggle .glyph,
@@ -508,10 +526,14 @@ main {
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   overflow: hidden;
-  position: relative;
+  position: sticky;
+  top: 56px;
+  align-self: flex-start;
 }
 #map {
-  height: 540px;
+  height: calc(100vh - 140px);
+  min-height: 420px;
+  max-height: 780px;
   width: 100%;
   background: var(--paper-tint);
 }
@@ -932,6 +954,320 @@ main {
   display: none !important;
 }
 
+/* ── Hero section ──────────────────────────────────────────────────────── */
+.hero-section {
+  background: var(--surface);
+  border-bottom: 2px solid var(--rule);
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+}
+.hero-section #intro-banner.lede {
+  flex: 1;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-section #intro-banner.intro-hidden {
+  flex: 0;
+}
+.scroll-cue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 28px;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-top: 1px solid var(--rule);
+}
+.scroll-cue-icon {
+  display: inline-block;
+  animation: bounce-down 1.9s ease-in-out infinite;
+}
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+
+/* ── Sticky map layout ─────────────────────────────────────────────────── */
+main .top-row {
+  align-items: flex-start;
+}
+
+/* ── Story section ─────────────────────────────────────────────────────── */
+.story-section {
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  padding: 28px 28px 24px;
+}
+.story-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 20px;
+}
+.story-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+.story-acts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.act-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 16px 16px 16px 18px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.act-card:hover {
+  border-color: var(--forest-2);
+  background: var(--bg);
+}
+.act-num {
+  font-family: var(--serif);
+  font-size: 26px;
+  color: var(--ink-4);
+  line-height: 1;
+  flex-shrink: 0;
+  min-width: 20px;
+  transition: color 0.2s;
+}
+.act-card:hover .act-num {
+  color: var(--ink-3);
+}
+.act-body {
+  flex: 1;
+  min-width: 0;
+}
+.act-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.act-country {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.act-desc {
+  font-size: 12px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+.act-arrow {
+  font-size: 16px;
+  color: var(--ink-4);
+  flex-shrink: 0;
+  align-self: center;
+  transition:
+    color 0.15s,
+    transform 0.15s;
+}
+.act-card:hover .act-arrow {
+  color: var(--forest-2);
+  transform: translateX(3px);
+}
+.act-source {
+  font-size: 10px;
+  color: var(--ink-4);
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--rule);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+.act-source em {
+  font-style: normal;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+/* ── Deforestation driver chips ────────────────────────────────────────── */
+.driver-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.driver-chip input {
+  display: none;
+}
+.driver-chip .chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.driver-chip:hover {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+.driver-chip.checked {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.driver-chip.checked .chip-dot {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+.driver-tool {
+  transition: opacity 0.2s;
+}
+.driver-tool.faded {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── Insight cards ─────────────────────────────────────────────────────── */
+.insight-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.insight-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.insight-num {
+  font-family: var(--serif);
+  font-size: 44px;
+  line-height: 1;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 60px;
+  letter-spacing: -0.02em;
+}
+.insight-num--forest {
+  color: var(--forest-2);
+  font-size: 38px;
+}
+.insight-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.insight-text p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ── Planetary Boundaries panel ────────────────────────────────────────── */
+.pb-intro {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.pb-item {
+  margin-bottom: 16px;
+}
+.pb-item:last-of-type {
+  margin-bottom: 0;
+}
+.pb-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.pb-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.pb-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+.pb-badge--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+.pb-badge--exceeded {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.pb-bar-track {
+  height: 5px;
+  background: var(--rule);
+  border-radius: 3px;
+  position: relative;
+  margin-bottom: 5px;
+  overflow: visible;
+}
+.pb-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.6s ease;
+}
+.pb-bar-fill--exceeded {
+  background: #ef4444;
+}
+.pb-bar-limit {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+.pb-note {
+  font-size: 10px;
+  color: var(--ink-3);
+  letter-spacing: 0.03em;
+}
+.pb-footer {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--ink-3);
+  font-style: italic;
+  line-height: 1.5;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .top-row {
@@ -951,5 +1287,11 @@ main {
   }
   #map {
     height: 420px;
+  }
+  .story-acts {
+    grid-template-columns: 1fr;
+  }
+  .insight-row {
+    grid-template-columns: 1fr;
   }
 }
