@@ -7,6 +7,15 @@ import {
   DEFOREST_CAUSES,
 } from "./constants.js";
 
+/* ── Toolbar height → CSS variable (keeps map sticky offset correct) ──────── */
+
+const toolbar = document.getElementById("controls");
+function syncToolbarHeight() {
+  document.documentElement.style.setProperty("--toolbar-h", toolbar.offsetHeight + "px");
+}
+syncToolbarHeight();
+new ResizeObserver(syncToolbarHeight).observe(toolbar);
+
 /* ── Intro banner ─────────────────────────────────────────────────────────── */
 
 const introBanner = document.getElementById("intro-banner");
