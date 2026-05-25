@@ -1,4 +1,4 @@
-import { FUELS, FUEL_COLORS, normalizeFuel } from "./constants.js";
+import { FUELS, FUEL_COLORS, normalizeFuel, DEFOREST_COLORS } from "./constants.js";
 
 const T = 350; // shared transition duration (ms)
 
@@ -448,6 +448,118 @@ export class CountHistogram extends BarChart {
 
     const barData = FUELS.map((f) => ({ fuel: f, val: counts[f] }));
     this._updateBars(barData, activeFuels, (v) => d3.format(",")(v));
+  }
+}
+
+/* ── DeforestHistogram ────────────────────────────────────────────────────── */
+
+const DRIVER_SHORT = { 1: "Commodity", 2: "Shifting", 3: "Forestry", 4: "Wildfire", 5: "Urban." };
+const DRIVERS = [1, 2, 3, 4, 5];
+
+export class DeforestHistogram {
+  constructor(id) {
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 8, right: 8, bottom: 42, left: 40 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+
+    this.g = this.svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
+    this.gridGroup = this.g.append("g");
+
+    this.xS = d3.scaleBand().domain(DRIVERS).range([0, this.W]).padding(0.25);
+    this.yS = d3.scaleLinear().domain([0, 1]).range([this.H, 0]);
+
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("x", m.left + this.W / 2).attr("y", m.top + this.H + 40)
+      .attr("text-anchor", "middle").text("Driver");
+
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(m.top + this.H / 2)).attr("y", 10)
+      .attr("text-anchor", "middle").text("Pixel count");
+
+    DRIVERS.forEach((d) => {
+      const cx = this.xS(d) + this.xS.bandwidth() / 2;
+      this.g.append("text").attr("class", "tick")
+        .attr("x", cx).attr("y", this.H + 8)
+        .attr("text-anchor", "end")
+        .attr("transform", `rotate(-40, ${cx}, ${this.H + 8})`)
+        .text(DRIVER_SHORT[d]);
+    });
+
+    this.hoverLabel = this.g.append("text")
+      .attr("class", "bar-label").attr("text-anchor", "middle")
+      .attr("font-size", "9px").attr("fill", "#333")
+      .style("pointer-events", "none").attr("visibility", "hidden");
+
+    this.placeholder = this.g.append("text")
+      .attr("x", this.W / 2).attr("y", this.H / 2)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+      .style("font-style", "italic")
+      .text("Enable deforestation overlay");
+  }
+
+  update(counts) {
+    const hasData = counts && Object.values(counts).some((v) => v > 0);
+    this.placeholder.attr("visibility", hasData ? "hidden" : "visible");
+
+    const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+
+    if (!hasData) {
+      this.g.selectAll("rect.bar").transition(t).attr("y", this.H).attr("height", 0);
+      return;
+    }
+
+    const mx = Math.max(...Object.values(counts), 1);
+    this.yS.domain([0, mx]);
+
+    const yTicks = this.yS.ticks(4);
+    const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
+    yLines.enter().append("line").attr("class", "y-grid")
+      .attr("x1", 0).attr("x2", this.W).attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
+      .attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d))
+      .merge(yLines).transition(t).attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d));
+    yLines.exit().remove();
+
+    const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
+    yTickTexts.enter().append("text").attr("class", "tick y-tick")
+      .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle")
+      .merge(yTickTexts).transition(t)
+      .attr("y", (d) => this.yS(d))
+      .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
+    yTickTexts.exit().remove();
+
+    const { xS, yS, H, hoverLabel } = this;
+    const barData = DRIVERS.map((dr) => ({ driver: dr, val: counts[dr] || 0 }));
+
+    const bars = this.g.selectAll("rect.bar").data(barData);
+    bars.enter().append("rect").attr("class", "bar")
+      .attr("rx", 3).attr("ry", 3)
+      .attr("x", (d) => xS(d.driver)).attr("width", xS.bandwidth())
+      .attr("fill", (d) => DEFOREST_COLORS[d.driver])
+      .attr("y", H).attr("height", 0).attr("opacity", 0.85);
+
+    const merged = this.g.selectAll("rect.bar");
+    merged
+      .attr("rx", 3).attr("ry", 3)
+      .attr("x", (d) => xS(d.driver)).attr("width", xS.bandwidth())
+      .attr("fill", (d) => DEFOREST_COLORS[d.driver]).attr("opacity", 0.85)
+      .on("mouseover", function (d) {
+        if (d.val === 0) return;
+        d3.select(this).attr("opacity", 1).attr("stroke", "#fff").attr("stroke-width", 1.5);
+        hoverLabel.attr("x", xS(d.driver) + xS.bandwidth() / 2)
+          .attr("y", yS(d.val) - 4).text(d3.format(",")(d.val)).attr("visibility", "visible");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("opacity", 0.85).attr("stroke", "none");
+        hoverLabel.attr("visibility", "hidden");
+      });
+
+    merged.transition(t).attr("y", (d) => yS(d.val)).attr("height", (d) => H - yS(d.val));
+    bars.exit().remove();
+    hoverLabel.raise();
   }
 }
 

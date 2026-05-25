@@ -235,7 +235,7 @@
 
         <div id="side-panel" class="side">
           <!-- Plant detail -->
-          <div class="panel-card panel-card--grow card grow">
+          <div class="panel-card card" id="plant-detail-card">
             <div class="card-head">
               <h3 class="card-title">Plant detail</h3>
               <span class="card-meta" id="detail-meta">Hover a marker</span>
@@ -247,11 +247,24 @@
                 active, its nearest deforestation driver.
               </p>
             </div>
-            <!-- Deforestation stats (visible only when overlay is on) -->
-            <div id="deforest-stats" class="hidden">
-              <div class="deforest-stats-title">Deforestation in view</div>
-              <div id="deforest-stats-rows"></div>
+          </div>
+
+          <!-- Plants stats — always visible -->
+          <div class="panel-card card" id="plant-stats">
+            <div class="card-head">
+              <h3 class="card-title">Plants in view</h3>
+              <span class="card-meta">By fuel type</span>
             </div>
+            <div id="plant-stats-rows"></div>
+          </div>
+
+          <!-- Deforestation stats — separate card, visible only when overlay is on -->
+          <div class="panel-card card hidden" id="deforest-stats">
+            <div class="card-head">
+              <h3 class="card-title">Deforestation in view</h3>
+              <span class="card-meta">Current view</span>
+            </div>
+            <div id="deforest-stats-rows"></div>
           </div>
 
           <!-- ── Planetary Boundaries ──────────────────────────────────── -->
@@ -400,6 +413,26 @@
           <div class="chart-hint chart-foot">
             Dot size = plant count · color = dominant fuel · labeled outliers
             annotated
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Distribution comparison ───────────────────────────────────── -->
+      <section class="bottom-row bottom-row--full">
+        <div class="chart-card distribution-card">
+          <div class="head">
+            <div class="chart-title title">Distributions in view</div>
+            <div class="subtitle">Deforestation pixels by driver · Power plants by fuel · current view</div>
+          </div>
+          <div class="distribution-duo">
+            <div class="distribution-half">
+              <div class="dist-sublabel">Deforestation drivers</div>
+              <svg id="plot-5" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+            <div class="distribution-half">
+              <div class="dist-sublabel">Power plant count</div>
+              <svg id="plot-6" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
           </div>
         </div>
       </section>

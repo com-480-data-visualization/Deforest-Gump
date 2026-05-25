@@ -853,11 +853,6 @@ main {
 }
 
 /* ── Deforestation sidebar stats ───────────────────────────────────────── */
-#deforest-stats {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--rule);
-}
 .deforest-stats-title {
   font-size: 10.5px;
   font-weight: 600;
@@ -1349,6 +1344,40 @@ main .top-row {
   border-top: 1px solid var(--rule);
 }
 
+/* ── Distribution comparison card ─────────────────────────────────────── */
+.bottom-row--full {
+  grid-template-columns: 1fr;
+}
+.distribution-card {
+  min-height: 260px;
+}
+.distribution-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  margin-top: 8px;
+}
+.distribution-half {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.distribution-half svg {
+  flex: 1;
+  width: 100%;
+}
+.dist-sublabel {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 500;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .top-row {
@@ -1373,6 +1402,9 @@ main .top-row {
     grid-template-columns: 1fr;
   }
   .insight-row {
+    grid-template-columns: 1fr;
+  }
+  .distribution-duo {
     grid-template-columns: 1fr;
   }
 }

@@ -146,3 +146,30 @@ export function showDeforestStats(driverCounts) {
 export function hideDeforestStats() {
   document.getElementById("deforest-stats")?.classList.add("hidden");
 }
+
+/* ── Plant Stats Panel ────────────────────────────────────────────────────── */
+
+export function showPlantStats(fuelCounts) {
+  const rowsEl = document.getElementById("plant-stats-rows");
+  if (!rowsEl) return;
+
+  const total = Object.values(fuelCounts).reduce((s, v) => s + v, 0);
+  if (total === 0) {
+    rowsEl.innerHTML = '<p class="detail-placeholder">No plants in current view.</p>';
+    return;
+  }
+
+  rowsEl.innerHTML = FUELS.map((fuel) => {
+    const count = fuelCounts[fuel] || 0;
+    const pct = (count / total) * 100;
+    return `
+      <div class="deforest-stat-row">
+        <span class="legend-dot" style="background:${FUEL_COLORS[fuel]};flex-shrink:0"></span>
+        <span class="deforest-stat-label">${fuel}</span>
+        <div class="deforest-stat-bar-wrap">
+          <div class="deforest-stat-bar" style="width:${pct.toFixed(1)}%;background:${FUEL_COLORS[fuel]}"></div>
+        </div>
+        <span class="deforest-stat-pct">${pct.toFixed(0)}%</span>
+      </div>`;
+  }).join("");
+}
