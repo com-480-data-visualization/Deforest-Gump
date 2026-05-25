@@ -58,20 +58,6 @@ export function setDeforestCountryFilter(bbox) {
   buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
 }
 
-function buildDeforestLegend() {
-  const el = document.getElementById("deforest-legend");
-  if (!el || el.children.length > 0) return;
-  Object.entries(DEFOREST_CAUSES).forEach(([driver, label]) => {
-    el.insertAdjacentHTML(
-      "beforeend",
-      `<div class="legend-item">
-        <span class="legend-dot" style="background:${DEFOREST_COLORS[driver]}"></span>
-        <span>${label}</span>
-      </div>`,
-    );
-  });
-}
-
 /* Half the 10km cell in degrees (≈ 0.0964° / 2). Used to project each
    point to its four cell corners so adjacent pixels share edges. */
 const CELL_HALF = 0.0482;
@@ -193,8 +179,6 @@ function buildDeforestLayerFromData(map, geojson) {
   deforestLayer = new DeforestCanvasLayer(pts);
   deforestLayer.addTo(map);
 
-  buildDeforestLegend();
-  document.getElementById("deforest-legend-card").classList.remove("hidden");
   document.dispatchEvent(
     new CustomEvent("deforest-toggled", { detail: { active: true } }),
   );
@@ -235,7 +219,6 @@ export function buildDeforestToggle(map) {
         map.removeLayer(deforestLayer);
         deforestLayer = null;
       }
-      document.getElementById("deforest-legend-card").classList.add("hidden");
       document.dispatchEvent(
         new CustomEvent("deforest-toggled", { detail: { active: false } }),
       );
@@ -248,6 +231,12 @@ export function buildDeforestToggle(map) {
 let populationLayer = null;
 let populationVisible = false;
 let populationGeoJSON = null; // cached so re-toggle skips re-fetch
+let populationThreshold = 0; // norm value [0,1] — hide points below this
+
+export function setPopulationThreshold(t) {
+  populationThreshold = t;
+  if (populationLayer) populationLayer._draw();
+}
 
 const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
 
@@ -255,46 +244,6 @@ function formatPop(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(0) + "k";
   return String(n);
-}
-
-function buildPopulationLegend() {
-  const el = document.getElementById("population-legend");
-  if (!el || el.children.length > 0) return;
-
-  // Gradient bar
-  const bar = document.createElement("canvas");
-  bar.width = 160;
-  bar.height = 10;
-  bar.style.cssText =
-    "display:block;border-radius:3px;margin-bottom:6px;width:100%;";
-  const bCtx = bar.getContext("2d");
-  for (let x = 0; x < 160; x++) {
-    bCtx.fillStyle = popColorScale(x / 159);
-    bCtx.fillRect(x, 0, 1, 10);
-  }
-  el.appendChild(bar);
-
-  // Low / High labels
-  const row = document.createElement("div");
-  row.style.cssText =
-    "display:flex;justify-content:space-between;font-size:10px;color:var(--ink-3);margin-bottom:8px;";
-  row.innerHTML = "<span>Low density</span><span>High density</span>";
-  el.appendChild(row);
-
-  // Representative tick entries
-  [
-    { label: "< 1k people / 10 km²", norm: 0.08 },
-    { label: "~100k people / 10 km²", norm: 0.55 },
-    { label: "1M+ people / 10 km²", norm: 1.0 },
-  ].forEach(({ label, norm }) => {
-    el.insertAdjacentHTML(
-      "beforeend",
-      `<div class="legend-item">
-        <span class="legend-dot" style="background:${popColorScale(norm)}"></span>
-        <span>${label}</span>
-      </div>`,
-    );
-  });
 }
 
 class PopHeatmapLayer extends L.Layer {
@@ -359,6 +308,7 @@ class PopHeatmapLayer extends L.Layer {
     const vb = map.getBounds();
     const visible = this._pts.filter(
       (p) =>
+        p.norm >= populationThreshold &&
         p.lat >= vb.getSouth() - 1 &&
         p.lat <= vb.getNorth() + 1 &&
         p.lng >= vb.getWest() - 1 &&
@@ -422,9 +372,6 @@ function buildPopLayerFromData(map, geojson) {
 
   populationLayer = new PopHeatmapLayer(pts, popColorScale);
   populationLayer.addTo(map);
-
-  buildPopulationLegend();
-  document.getElementById("population-legend-card").classList.remove("hidden");
 }
 
 function loadPopulationLayer(map) {
@@ -454,6 +401,8 @@ export function buildPopulationToggle(map) {
   btn.addEventListener("click", () => {
     populationVisible = !populationVisible;
     btn.classList.toggle("active", populationVisible);
+    document.getElementById("population-tool").classList.toggle("hidden", !populationVisible);
+    document.getElementById("population-divider").classList.toggle("hidden", !populationVisible);
     if (populationVisible) {
       loadPopulationLayer(map);
     } else {
@@ -461,7 +410,6 @@ export function buildPopulationToggle(map) {
         map.removeLayer(populationLayer);
         populationLayer = null;
       }
-      document.getElementById("population-legend-card").classList.add("hidden");
     }
   });
 }

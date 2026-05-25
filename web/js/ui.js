@@ -30,21 +30,6 @@ export function showToast(msg) {
   setTimeout(() => t.remove(), 4000);
 }
 
-/* ── Legend ───────────────────────────────────────────────────────────────── */
-
-export function buildLegend() {
-  const el = document.getElementById("legend");
-  FUELS.forEach((fuel) => {
-    el.insertAdjacentHTML(
-      "beforeend",
-      `<div class="legend-item">
-        <span class="legend-dot" style="background:${FUEL_COLORS[fuel]}"></span>
-        <span>${fuel}</span>
-      </div>`,
-    );
-  });
-}
-
 /* ── Fuel chips ───────────────────────────────────────────────────────────── */
 
 export function buildFuelChips(onChange) {

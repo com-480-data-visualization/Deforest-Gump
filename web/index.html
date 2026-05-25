@@ -41,108 +41,108 @@
 
     <!-- ── Hero section (full-viewport narrative + story cards) ─────────── -->
     <div class="hero-section">
-
-    <!-- Lede / intro banner -->
-    <section id="intro-banner" class="lede">
-      <div class="lede-text">
-        <div class="lede-eyebrow">A data essay on energy &amp; forests</div>
-        <h2>Where energy <em>meets</em> the forest.</h2>
-        <p class="lede-sub">
-          Fossil-fuel infrastructure and deforestation share the same map — but
-          the relationship is more complex than it looks. Browse 30 000+ power
-          plants and 500 000+ deforestation pixels across 148 countries, follow
-          the three guided stories below, then explore freely.
-        </p>
-      </div>
-      <div class="lede-stats">
-        <div class="stat">
-          <span class="stat-num">30K+</span>
-          <span class="stat-label">Power plants</span>
+      <!-- Lede / intro banner -->
+      <section id="intro-banner" class="lede">
+        <div class="lede-text">
+          <div class="lede-eyebrow">A data essay on energy &amp; forests</div>
+          <h2>Where energy <em>meets</em> the forest.</h2>
+          <p class="lede-sub">
+            Fossil-fuel infrastructure and deforestation share the same map —
+            but the relationship is more complex than it looks. Browse 30 000+
+            power plants and 500 000+ deforestation pixels across 148 countries,
+            follow the three guided stories below, then explore freely.
+          </p>
         </div>
-        <div class="stat">
-          <span class="stat-num">148</span>
-          <span class="stat-label">Countries</span>
+        <div class="lede-stats">
+          <div class="stat">
+            <span class="stat-num">30K+</span>
+            <span class="stat-label">Power plants</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">148</span>
+            <span class="stat-label">Countries</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">500K+</span>
+            <span class="stat-label">Deforest. pixels</span>
+          </div>
         </div>
-        <div class="stat">
-          <span class="stat-num">500K+</span>
-          <span class="stat-label">Deforest. pixels</span>
+        <button id="intro-dismiss" aria-label="Close intro">&#x2715;</button>
+      </section>
+
+      <!-- ── Guided story section ──────────────────────────────────────────── -->
+      <section class="story-section">
+        <div class="story-eyebrow">
+          <span class="story-rule"></span>
+          Three regions · Three stories · Click to fly there
+          <span class="story-rule"></span>
         </div>
-      </div>
-      <button id="intro-dismiss" aria-label="Close intro">&#x2715;</button>
-    </section>
+        <div class="story-acts">
+          <button class="act-card" data-lat="-5" data-lng="-55" data-zoom="5">
+            <span class="act-num">I</span>
+            <div class="act-body">
+              <strong class="act-title">Amazon Basin</strong>
+              <span class="act-country"
+                >Brazil · 15% fossil share · dominant fuel: Hydro</span
+              >
+              <p class="act-desc">
+                Commodity-driven deforestation dominates — not energy. Brazil's
+                grid runs mostly on hydropower, yet the Amazon loses millions of
+                hectares each year to soy farms and cattle ranching. High
+                deforestation ≠ high fossil fuels.
+              </p>
+              <p class="act-source">
+                <em>Sources:</em> INPE PRODES (2023) · Gibbs et al.,
+                <em>Science</em> 2010 · Global Forest Watch
+              </p>
+            </div>
+            <span class="act-arrow">→</span>
+          </button>
 
-    <!-- ── Guided story section ──────────────────────────────────────────── -->
-    <section class="story-section">
-      <div class="story-eyebrow">
-        <span class="story-rule"></span>
-        Three regions · Three stories · Click to fly there
-        <span class="story-rule"></span>
-      </div>
-      <div class="story-acts">
-        <button class="act-card" data-lat="-5" data-lng="-55" data-zoom="5">
-          <span class="act-num">I</span>
-          <div class="act-body">
-            <strong class="act-title">Amazon Basin</strong>
-            <span class="act-country"
-              >Brazil · 15% fossil share · dominant fuel: Hydro</span
-            >
-            <p class="act-desc">
-              Commodity-driven deforestation dominates — not energy. Brazil's
-              grid runs mostly on hydropower, yet the Amazon loses millions of
-              hectares each year to soy farms and cattle ranching. High
-              deforestation ≠ high fossil fuels.
-            </p>
-            <p class="act-source">
-              <em>Sources:</em> INPE PRODES (2023) · Gibbs et al., <em>Science</em> 2010 ·
-              Global Forest Watch
-            </p>
-          </div>
-          <span class="act-arrow">→</span>
-        </button>
+          <button class="act-card" data-lat="0" data-lng="115" data-zoom="5">
+            <span class="act-num">II</span>
+            <div class="act-body">
+              <strong class="act-title">Borneo / SE Asia</strong>
+              <span class="act-country"
+                >Indonesia · 88% fossil share · dominant fuel: Coal</span
+              >
+              <p class="act-desc">
+                Here the two pressures converge. Coal power fuels rapid
+                industrialisation while palm oil expansion and logging clear one
+                of the planet's most biodiverse forests. The highest fossil
+                share meets significant deforestation.
+              </p>
+              <p class="act-source">
+                <em>Sources:</em> Hansen et al., <em>Science</em> 2013 · Vijay
+                et al., <em>PLOS ONE</em> 2016 · IEA World Energy Statistics
+                2022
+              </p>
+            </div>
+            <span class="act-arrow">→</span>
+          </button>
 
-        <button class="act-card" data-lat="0" data-lng="115" data-zoom="5">
-          <span class="act-num">II</span>
-          <div class="act-body">
-            <strong class="act-title">Borneo / SE Asia</strong>
-            <span class="act-country"
-              >Indonesia · 88% fossil share · dominant fuel: Coal</span
-            >
-            <p class="act-desc">
-              Here the two pressures converge. Coal power fuels rapid
-              industrialisation while palm oil expansion and logging clear one
-              of the planet's most biodiverse forests. The highest fossil share
-              meets significant deforestation.
-            </p>
-            <p class="act-source">
-              <em>Sources:</em> Hansen et al., <em>Science</em> 2013 · Vijay et al.,
-              <em>PLOS ONE</em> 2016 · IEA World Energy Statistics 2022
-            </p>
-          </div>
-          <span class="act-arrow">→</span>
-        </button>
-
-        <button class="act-card" data-lat="0" data-lng="25" data-zoom="5">
-          <span class="act-num">III</span>
-          <div class="act-body">
-            <strong class="act-title">Congo Basin</strong>
-            <span class="act-country"
-              >DRC · 1% fossil share · dominant fuel: Hydro</span
-            >
-            <p class="act-desc">
-              Massive deforestation despite almost zero fossil-fuel
-              infrastructure. Shifting agriculture and subsistence farming drive
-              forest loss here — a stark reminder that energy mix alone cannot
-              explain deforestation pressure.
-            </p>
-            <p class="act-source">
-              <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina et al.,
-              <em>Sci. Advances</em> 2018 · SE4All Africa Hub
-            </p>
-          </div>
-          <span class="act-arrow">→</span>
-        </button>
-      </div>
-    </section>
+          <button class="act-card" data-lat="0" data-lng="25" data-zoom="5">
+            <span class="act-num">III</span>
+            <div class="act-body">
+              <strong class="act-title">Congo Basin</strong>
+              <span class="act-country"
+                >DRC · 1% fossil share · dominant fuel: Hydro</span
+              >
+              <p class="act-desc">
+                Massive deforestation despite almost zero fossil-fuel
+                infrastructure. Shifting agriculture and subsistence farming
+                drive forest loss here — a stark reminder that energy mix alone
+                cannot explain deforestation pressure.
+              </p>
+              <p class="act-source">
+                <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina et
+                al., <em>Sci. Advances</em> 2018 · SE4All Africa Hub
+              </p>
+            </div>
+            <span class="act-arrow">→</span>
+          </button>
+        </div>
+      </section>
 
       <!-- Scroll indicator -->
       <div class="scroll-cue">
@@ -150,20 +150,11 @@
         Scroll to explore the interactive map
         <span class="scroll-cue-icon">↓</span>
       </div>
-
-    </div><!-- /.hero-section -->
+    </div>
+    <!-- /.hero-section -->
 
     <!-- ── Toolbar / filters ─────────────────────────────────────────────── -->
     <div id="controls" class="toolbar">
-      <div class="tool">
-        <span class="tool-label">Fuel</span>
-        <div class="chips fuel-chips" id="fuel-chips">
-          <!-- populated by JS -->
-        </div>
-      </div>
-
-      <div class="tool-divider"></div>
-
       <div class="tool">
         <span class="tool-label">Country</span>
         <div class="select-wrap">
@@ -196,13 +187,34 @@
         </div>
       </div>
 
-      <div class="tool-divider"></div>
+      <div class="tool-divider" id="fuel-divider"></div>
 
+      <div class="tool" id="fuel-tool">
+        <span class="tool-label">Fuel</span>
+        <div class="chips fuel-chips" id="fuel-chips">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <div class="tool-divider hidden" id="driver-divider"></div>
       <!-- Deforestation driver filter — enabled only when overlay is on -->
-      <div class="tool driver-tool faded" id="driver-tool">
+      <div class="tool driver-tool hidden" id="driver-tool">
         <span class="tool-label">Deforest. driver</span>
         <div class="chips" id="driver-chips">
           <!-- populated by JS -->
+        </div>
+      </div>
+
+      <div class="tool-divider hidden" id="population-divider"></div>
+      <!-- Population density filter — enabled only when overlay is on -->
+      <div class="tool hidden" id="population-tool">
+        <span class="tool-label">Population</span>
+        <div class="pop-filter">
+          <div class="pop-gradient-wrap">
+            <div class="pop-gradient-bar" id="pop-gradient-bar"></div>
+            <input type="range" id="population-slider" class="pop-slider" min="0" max="100" value="0" step="1">
+          </div>
+          <span class="pop-threshold-label" id="pop-threshold-label">All</span>
         </div>
       </div>
     </div>
@@ -240,31 +252,6 @@
               <div class="deforest-stats-title">Deforestation in view</div>
               <div id="deforest-stats-rows"></div>
             </div>
-          </div>
-
-          <!-- Fuel legend -->
-          <div class="panel-card card">
-            <div class="card-head">
-              <h3 class="card-title">Fuel legend</h3>
-              <span class="card-meta">Marker color</span>
-            </div>
-            <div class="legend legend-items" id="legend"></div>
-          </div>
-
-          <!-- Deforestation legend (hidden until overlay is on) -->
-          <div class="panel-card card hidden" id="deforest-legend-card">
-            <div class="card-head">
-              <h3 class="card-title">Deforestation driver</h3>
-            </div>
-            <div class="legend legend-items" id="deforest-legend"></div>
-          </div>
-
-          <!-- Population legend (hidden until overlay is on) -->
-          <div class="panel-card card hidden" id="population-legend-card">
-            <div class="card-head">
-              <h3 class="card-title">Population density</h3>
-            </div>
-            <div class="legend legend-items" id="population-legend"></div>
           </div>
 
           <!-- ── Planetary Boundaries ──────────────────────────────────── -->
@@ -436,11 +423,11 @@
     <script type="module" src="js/app.js"></script>
 
     <script>
-      /* Sync driver-tool fade with deforest toggle state */
+      /* Sync driver-tool visibility with deforest toggle state */
       document.addEventListener("deforest-toggled", (e) => {
-        document
-          .getElementById("driver-tool")
-          .classList.toggle("faded", !e.detail.active);
+        const active = e.detail.active;
+        document.getElementById("driver-tool").classList.toggle("hidden", !active);
+        document.getElementById("driver-divider").classList.toggle("hidden", !active);
       });
     </script>
   </body>

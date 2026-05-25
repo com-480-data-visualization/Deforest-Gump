@@ -1,5 +1,4 @@
 import {
-  buildLegend,
   buildFuelChips,
   buildCountrySelect,
   getActiveFuels,
@@ -16,6 +15,7 @@ import {
   getNearestDeforestDriver,
   setDeforestDriverFilter,
   setDeforestCountryFilter,
+  setPopulationThreshold,
 } from "./overlays.js";
 import { DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
@@ -25,8 +25,6 @@ import {
   CapacityPieChart,
   CorrelationScatter,
 } from "./charts.js";
-
-buildLegend();
 
 const map = L.map("map", { zoomControl: true, minZoom: 2 }).setView([20, 0], 2);
 
@@ -61,6 +59,7 @@ Promise.all([
     buildCountrySelect(countries, onFilterChange);
     buildFuelChips(onFilterChange);
     buildDriverChips();
+    buildPopSlider();
 
     /* getNearest callback: injected into buildMarkers to avoid circular dep */
     const getNearest = (lat, lng) =>
@@ -70,9 +69,13 @@ Promise.all([
 
     let plantsVisible = true;
     const plantsBtn = document.getElementById("plants-toggle");
+    const fuelTool = document.getElementById("fuel-tool");
+    const fuelDivider = document.getElementById("fuel-divider");
     plantsBtn.addEventListener("click", () => {
       plantsVisible = !plantsVisible;
       plantsBtn.classList.toggle("active", plantsVisible);
+      fuelTool.classList.toggle("hidden", !plantsVisible);
+      fuelDivider.classList.toggle("hidden", !plantsVisible);
       if (plantsVisible) {
         plantsGroup.addTo(map);
       } else {
@@ -181,6 +184,21 @@ function buildDriverChips() {
       setDeforestDriverFilter(active);
     });
     container.appendChild(chip);
+  });
+}
+
+/* ── Population density slider ──────────────────────────────────────────── */
+
+function buildPopSlider() {
+  const slider = document.getElementById("population-slider");
+  const label = document.getElementById("pop-threshold-label");
+  const bar = document.getElementById("pop-gradient-bar");
+  if (!slider) return;
+  slider.addEventListener("input", () => {
+    const val = +slider.value;
+    label.textContent = val === 0 ? "All" : `≥ ${val}%`;
+    bar.style.setProperty("--filter-pct", val + "%");
+    setPopulationThreshold(val / 100);
   });
 }
 
