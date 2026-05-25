@@ -47,6 +47,7 @@ Promise.all([
   d3.csv("data/4-power-plants.csv", (d) => ({
     name: d.name,
     country: d.country_long,
+    iso3: d.country,
     fuel: d.primary_fuel,
     capacity: +d.capacity_mw,
     lat: +d.latitude,
@@ -58,6 +59,7 @@ Promise.all([
     hideLoading();
 
     const countries = new Set(data.map((d) => d.country).filter(Boolean));
+    const countryToIso3 = new Map(data.filter((d) => d.country && d.iso3).map((d) => [d.country, d.iso3]));
     buildCountrySelect(countries, onFilterChange);
     buildFuelChips(onFilterChange);
     buildDriverChips(() => { refreshDeforestSidebar(); refreshDeforestDist(); });
@@ -163,29 +165,14 @@ Promise.all([
       deforestDistChart.update(filterByActiveDrivers(getDeforestStats(...getViewArgs())));
     }
 
-    function getCountryBbox(country) {
-      if (country === "ALL") return null;
-      const pts = data.filter(
-        (d) => d.country === country && !isNaN(d.lat) && !isNaN(d.lng),
-      );
-      if (!pts.length) return null;
-      const lats = pts.map((d) => d.lat);
-      const lngs = pts.map((d) => d.lng);
-      return {
-        s: Math.min(...lats) - 1,
-        n: Math.max(...lats) + 1,
-        w: Math.min(...lngs) - 2,
-        e: Math.max(...lngs) + 2,
-      };
-    }
-
     function onFilterChange() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
       applyFilters(markers, fuels, country);
       refreshCharts();
       scatter.highlightCountry(country);
-      setDeforestCountryFilter(getCountryBbox(country));
+      const iso3 = country === "ALL" ? null : (countryToIso3.get(country) ?? null);
+      setDeforestCountryFilter(iso3);
     }
 
     document.addEventListener("deforest-toggled", (e) => {

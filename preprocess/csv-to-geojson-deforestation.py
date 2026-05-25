@@ -59,6 +59,7 @@ def main():
                 "properties": {
                     "driver": driver,
                     "cause": row["cause"].strip(),
+                    "cc3": row["country_code_3"].strip(),
                 },
                 "geometry": {
                     "type": "Point",

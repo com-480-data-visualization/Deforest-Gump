@@ -9,7 +9,7 @@ let deforestVisible = false;
 let deforestFeatures = []; // all features — used for stats + nearest lookup
 let deforestGeoJSON = null; // cached raw GeoJSON so re-toggle skips re-fetch
 let deforestActiveDrivers = new Set([1, 2, 3, 4, 5]);
-let deforestCountryBbox = null; // {s, n, w, e} or null for no country filter
+let deforestCountryIso3 = null; // ISO alpha-3 string or null for no country filter
 
 export const isDeforestVisible = () => deforestVisible;
 
@@ -49,10 +49,10 @@ export function setDeforestDriverFilter(activeDrivers) {
   buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
 }
 
-/* Filter deforestation to an approximate country bounding box.
-   Pass null to remove the filter. */
-export function setDeforestCountryFilter(bbox) {
-  deforestCountryBbox = bbox;
+/* Filter deforestation to a specific country. Pass an ISO alpha-3 code (e.g.
+   "BRA") to restrict, or null to show all countries. */
+export function setDeforestCountryFilter(iso3) {
+  deforestCountryIso3 = iso3;
   if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
   if (deforestLayer) deforestMap.removeLayer(deforestLayer);
   buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
@@ -151,13 +151,9 @@ class DeforestCanvasLayer extends L.Layer {
 }
 
 function buildDeforestLayerFromData(map, geojson) {
-  // Apply country bbox filter first, then driver filter
-  const bboxFiltered = deforestCountryBbox
-    ? geojson.features.filter((f) => {
-        const [lng, lat] = f.geometry.coordinates;
-        const { s, n, w, e } = deforestCountryBbox;
-        return lat >= s && lat <= n && lng >= w && lng <= e;
-      })
+  // Apply country filter first (exact ISO alpha-3 match), then driver filter
+  const bboxFiltered = deforestCountryIso3
+    ? geojson.features.filter((f) => f.properties.cc3 === deforestCountryIso3)
     : geojson.features;
 
   deforestFeatures = bboxFiltered;
