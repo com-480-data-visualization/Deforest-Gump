@@ -399,7 +399,12 @@ header.masthead {
   color: var(--ink);
 }
 #plants-toggle.tgl:hover .glyph {
-  background: radial-gradient(circle at 50% 40%, var(--moss) 0 2.5px, transparent 2.5px 4px, var(--moss) 4px 5px);
+  background: radial-gradient(
+    circle at 50% 40%,
+    var(--moss) 0 2.5px,
+    transparent 2.5px 4px,
+    var(--moss) 4px 5px
+  );
 }
 #deforest-toggle.tgl:hover .glyph {
   background: repeating-linear-gradient(
@@ -425,7 +430,12 @@ header.masthead {
 }
 #plants-toggle .glyph {
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, var(--rule-strong) 0 2.5px, transparent 2.5px 4px, var(--rule-strong) 4px 5px);
+  background: radial-gradient(
+    circle at 50% 40%,
+    var(--rule-strong) 0 2.5px,
+    transparent 2.5px 4px,
+    var(--rule-strong) 4px 5px
+  );
 }
 #deforest-toggle .glyph {
   background: repeating-linear-gradient(
@@ -471,7 +481,12 @@ header.masthead {
 }
 #plants-toggle.active .glyph,
 #plants-toggle.on .glyph {
-  background: radial-gradient(circle at 50% 40%, #60a5fa 0 2.5px, transparent 2.5px 4px, #60a5fa 4px 5px);
+  background: radial-gradient(
+    circle at 50% 40%,
+    #60a5fa 0 2.5px,
+    transparent 2.5px 4px,
+    #60a5fa 4px 5px
+  );
 }
 #deforest-toggle.active .glyph,
 #deforest-toggle.on .glyph {
@@ -673,6 +688,9 @@ main {
   margin-bottom: 6px;
   color: var(--ink);
 }
+.detail-empty {
+  color: var(--ink-4);
+}
 
 .detail-row {
   display: flex;
@@ -729,17 +747,19 @@ main {
 }
 
 /* ── Charts ────────────────────────────────────────────────────────────── */
-.bottom-row {
+.charts-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
 }
 .chart-card {
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  padding: 16px 18px 14px;
-  min-height: 220px;
+  padding: 12px 14px 10px;
+  min-height: 250px;
+  max-height: 380px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: none;
@@ -782,7 +802,7 @@ main {
   text-transform: uppercase;
   margin-left: 4px;
 }
-.pie-label {
+.treemap-label {
   font-size: 11px;
   color: var(--ink-3);
   margin-top: 6px;
@@ -791,6 +811,7 @@ main {
 }
 .chart-card svg {
   flex: 1;
+  min-height: 0;
   width: 100%;
   display: block;
   margin-top: 6px;
@@ -1000,8 +1021,13 @@ main {
   animation: bounce-down 1.9s ease-in-out infinite;
 }
 @keyframes bounce-down {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
 }
 
 /* ── Sticky map layout ─────────────────────────────────────────────────── */
@@ -1135,7 +1161,14 @@ main .top-row {
   height: 8px;
   border-radius: 4px;
   transform: translateY(-50%);
-  background: linear-gradient(to right, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026);
+  background: linear-gradient(
+    to right,
+    #ffffb2,
+    #fecc5c,
+    #fd8d3c,
+    #f03b20,
+    #bd0026
+  );
   overflow: hidden;
 }
 /* Dimmed overlay on the filtered-out (left) portion */
@@ -1345,46 +1378,12 @@ main .top-row {
   border-top: 1px solid var(--rule);
 }
 
-/* ── Distribution comparison card ─────────────────────────────────────── */
-.bottom-row--full {
-  grid-template-columns: 1fr;
-}
-.distribution-card {
-  min-height: 260px;
-}
-.distribution-duo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  flex: 1;
-  margin-top: 8px;
-}
-.distribution-half {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.distribution-half svg {
-  flex: 1;
-  width: 100%;
-}
-.dist-sublabel {
-  font-size: 10.5px;
-  color: var(--ink-3);
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  font-weight: 500;
-  padding-bottom: 6px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--rule);
-}
-
 /* ── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .top-row {
     grid-template-columns: 1fr;
   }
-  .bottom-row {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
   #intro-banner.lede {
@@ -1403,9 +1402,6 @@ main .top-row {
     grid-template-columns: 1fr;
   }
   .insight-row {
-    grid-template-columns: 1fr;
-  }
-  .distribution-duo {
     grid-template-columns: 1fr;
   }
 }

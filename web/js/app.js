@@ -13,6 +13,7 @@ import {
   buildPopulationToggle,
   isDeforestVisible,
   getDeforestStats,
+  getDeforestStatsByCountry,
   getNearestDeforestDriver,
   setDeforestDriverFilter,
   setDeforestCountryFilter,
@@ -24,7 +25,7 @@ import { buildMarkers, applyFilters } from "./map.js";
 import {
   EnergyHistogram,
   CountHistogram,
-  CapacityPieChart,
+  CapacityTreemap,
   CorrelationScatter,
   DeforestHistogram,
 } from "./charts.js";
@@ -39,6 +40,7 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
 
 buildDeforestToggle(map);
 buildPopulationToggle(map);
+document.getElementById("deforest-toggle").click();
 
 const renderer = L.canvas({ padding: 0.5 });
 
@@ -63,12 +65,11 @@ Promise.all([
     const countryToIso3 = new Map(data.filter((d) => d.country && d.iso3).map((d) => [d.country, d.iso3]));
     buildCountrySelect(countries, onFilterChange);
     buildFuelChips(onFilterChange);
-    buildDriverChips(() => { refreshDeforestSidebar(); refreshDeforestDist(); });
+    buildDriverChips(() => { refreshDeforestSidebar(); refreshDeforestDist(); refreshCharts(); });
     buildPopSlider();
 
     /* getNearest callback: injected into buildMarkers to avoid circular dep */
-    const getNearest = (lat, lng) =>
-      isDeforestVisible() ? getNearestDeforestDriver(lat, lng) : null;
+    const getNearest = (lat, lng) => getNearestDeforestDriver(lat, lng);
 
     const { markers, group: plantsGroup } = buildMarkers(map, data, renderer, getNearest);
 
@@ -93,7 +94,7 @@ Promise.all([
     });
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
-    const pieChart = new CapacityPieChart("plot-3", data);
+    const pieChart = new CapacityTreemap("plot-3", data);
     const deforestDistChart = new DeforestHistogram("plot-5");
     const plantDistChart = new CountHistogram("plot-6", data);
 
@@ -134,12 +135,20 @@ Promise.all([
     function refreshCharts() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
-      const viewArgs = [...getViewArgs(), fuels, country];
+      const [s, n, w, e] = getViewArgs();
+      const viewArgs = [s, n, w, e, fuels, country];
       avgCapacityChart.update(...viewArgs);
       countChart.update(...viewArgs);
       pieChart.update(...viewArgs);
       plantDistChart.update(...viewArgs);
       refreshPlantStats();
+
+      const visiblePlants = data.filter((d) =>
+        d.lat >= s && d.lat <= n && d.lng >= w && d.lng <= e &&
+        (country === "ALL" || d.country === country) &&
+        fuels.includes(normalizeFuel(d.fuel))
+      );
+      scatter.update(visiblePlants, getDeforestStatsByCountry(s, n, w, e));
     }
 
     function getActiveDrivers() {
@@ -181,9 +190,11 @@ Promise.all([
       if (e.detail.active) {
         refreshDeforestSidebar();
         refreshDeforestDist();
+        refreshCharts();
       } else {
         hideDeforestStats();
         deforestDistChart.update(null);
+        refreshCharts();
       }
     });
 

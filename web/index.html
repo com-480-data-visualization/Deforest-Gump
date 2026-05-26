@@ -212,7 +212,15 @@
         <div class="pop-filter">
           <div class="pop-gradient-wrap">
             <div class="pop-gradient-bar" id="pop-gradient-bar"></div>
-            <input type="range" id="population-slider" class="pop-slider" min="0" max="100" value="0" step="1">
+            <input
+              type="range"
+              id="population-slider"
+              class="pop-slider"
+              min="0"
+              max="100"
+              value="0"
+              step="1"
+            />
           </div>
           <span class="pop-threshold-label" id="pop-threshold-label">All</span>
         </div>
@@ -227,8 +235,8 @@
           <div class="map-foot">
             <span class="pulse"></span>
             <span
-              ><span id="visible-count">—</span> plants in view · drag to
-              pan</span
+              ><span id="visible-count">—</span> Updating graph with current
+              view</span
             >
           </div>
         </div>
@@ -241,21 +249,28 @@
               <span class="card-meta" id="detail-meta">Hover a marker</span>
             </div>
             <div id="detail-content">
-              <p class="detail-placeholder">
-                Hover or click a marker on the map to read this plant's name,
-                fuel, capacity, country — and, when the deforestation overlay is
-                active, its nearest deforestation driver.
-              </p>
+              <div class="detail-name detail-empty">Hover a marker…</div>
+              <div class="detail-row">
+                <span class="detail-key">Country</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-key">Fuel</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-key">Capacity</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-key">Coordinates</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-key">Nearby deforest.</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
             </div>
-          </div>
-
-          <!-- Plants stats — always visible -->
-          <div class="panel-card card" id="plant-stats">
-            <div class="card-head">
-              <h3 class="card-title">Plants in view</h3>
-              <span class="card-meta">By fuel type</span>
-            </div>
-            <div id="plant-stats-rows"></div>
           </div>
 
           <!-- Deforestation stats — separate card, visible only when overlay is on -->
@@ -267,58 +282,45 @@
             <div id="deforest-stats-rows"></div>
           </div>
 
-          <!-- ── Planetary Boundaries ──────────────────────────────────── -->
-          <div class="panel-card card" id="pb-card">
+          <!-- Plants stats — always visible -->
+          <div class="panel-card card" id="plant-stats">
             <div class="card-head">
-              <h3 class="card-title">Planetary Boundaries</h3>
-              <span class="card-meta">Global context</span>
+              <h3 class="card-title">Plants in view</h3>
+              <span class="card-meta">By fuel type</span>
             </div>
-            <p class="pb-intro">
-              The data on this map directly contributes to two of Earth's nine
-              planetary boundaries currently beyond their safe limits.
-            </p>
-
-            <div class="pb-item">
-              <div class="pb-item-head">
-                <span class="pb-name">Radiative Forcing</span>
-                <span class="pb-badge pb-badge--warn">At risk</span>
-              </div>
-              <div class="pb-bar-track">
-                <!-- bar fills to ~145% of the safe limit — capped visually -->
-                <div class="pb-bar-fill" style="width: 100%"></div>
-                <!-- safe limit marker at ~69% of bar width = 1.0 / 1.45 -->
-                <div class="pb-bar-limit" style="left: 69%"></div>
-              </div>
-              <div class="pb-note">
-                ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂
-                from fossil fuels
-              </div>
-            </div>
-
-            <div class="pb-item">
-              <div class="pb-item-head">
-                <span class="pb-name">Biosphere Integrity (HANPP)</span>
-                <span class="pb-badge pb-badge--exceeded">Exceeded</span>
-              </div>
-              <div class="pb-bar-track">
-                <div
-                  class="pb-bar-fill pb-bar-fill--exceeded"
-                  style="width: 100%"
-                ></div>
-                <!-- safe limit at 25% of bar = 25% HANPP threshold -->
-                <div class="pb-bar-limit" style="left: 25%"></div>
-              </div>
-              <div class="pb-note">
-                &gt;75% HANPP observed · safe boundary: &lt;25% — driven by land
-                use change and deforestation
-              </div>
-            </div>
-
-            <p class="pb-footer">
-              Source: Stockholm Resilience Centre, 2023. Each power plant and
-              each deforestation pixel visible on this map is a contributor.
-            </p>
+            <div id="plant-stats-rows"></div>
           </div>
+
+          <!-- Total capacity mix -->
+          <div class="panel-card card chart-card">
+            <div class="card-head">
+              <h3 class="card-title">Total capacity mix</h3>
+              <span class="card-meta" id="total-mw">—</span>
+            </div>
+            <svg
+              id="plot-3"
+              viewBox="0 0 260 120"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+            <div id="treemap-label" class="treemap-label">Hover a cell</div>
+          </div>
+
+          <!-- Fossil share vs. forest loss -->
+          <div class="panel-card card chart-card">
+            <div class="card-head">
+              <h3 class="card-title">Fossil share vs. forest loss</h3>
+              <span class="card-meta">Click a dot to filter</span>
+            </div>
+            <svg
+              id="plot-4"
+              viewBox="0 0 260 140"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+            <div class="chart-hint chart-foot">
+              Dot size = plant count · color = dominant fuel
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -355,7 +357,7 @@
       </section>
 
       <!-- ── Charts ─────────────────────────────────────────────────────── -->
-      <section class="bottom-row">
+      <section class="charts-grid">
         <div class="chart-card">
           <div class="head">
             <div class="chart-title title">Average capacity</div>
@@ -363,7 +365,7 @@
           </div>
           <svg
             id="plot-1"
-            viewBox="0 0 260 160"
+            viewBox="0 0 260 140"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
         </div>
@@ -375,65 +377,76 @@
           </div>
           <svg
             id="plot-2"
-            viewBox="0 0 260 160"
+            viewBox="0 0 260 140"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
-        </div>
-      </section>
-
-      <section class="bottom-row">
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Total capacity mix</div>
-            <div class="subtitle">Share of installed MW</div>
-          </div>
-          <div class="chart-total total">
-            <span id="total-mw">—</span><small>MW</small>
-          </div>
-          <svg
-            id="plot-3"
-            viewBox="0 0 260 160"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-          <div id="pie-label" class="pie-label">Hover a slice</div>
         </div>
 
         <div class="chart-card">
           <div class="head">
-            <div class="chart-title title">Fossil share vs. forest loss</div>
-            <div class="subtitle">
-              By country · click a dot to filter the map
-            </div>
+            <div class="chart-title title">Deforestation drivers</div>
+            <div class="subtitle">Pixels by driver · current view</div>
           </div>
           <svg
-            id="plot-4"
-            viewBox="0 0 260 160"
+            id="plot-5"
+            viewBox="0 0 260 140"
             preserveAspectRatio="xMidYMid meet"
           ></svg>
-          <div class="chart-hint chart-foot">
-            Dot size = plant count · color = dominant fuel · labeled outliers
-            annotated
-          </div>
         </div>
-      </section>
 
-      <!-- ── Distribution comparison ───────────────────────────────────── -->
-      <section class="bottom-row bottom-row--full">
-        <div class="chart-card distribution-card">
+        <div class="chart-card">
           <div class="head">
-            <div class="chart-title title">Distributions in view</div>
-            <div class="subtitle">Deforestation pixels by driver · Power plants by fuel · current view</div>
+            <div class="chart-title title">Plant count distribution</div>
+            <div class="subtitle">By fuel type · current view</div>
           </div>
-          <div class="distribution-duo">
-            <div class="distribution-half">
-              <div class="dist-sublabel">Deforestation drivers</div>
-              <svg id="plot-5" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+          <svg
+            id="plot-6"
+            viewBox="0 0 260 140"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+        </div>
+
+        <div class="chart-card" id="pb-card">
+          <div class="head">
+            <div class="chart-title title">Planetary Boundaries</div>
+            <div class="subtitle">Global context</div>
+          </div>
+          <p class="pb-intro">
+            The data on this map directly contributes to two of Earth's nine
+            planetary boundaries currently beyond their safe limits.
+          </p>
+          <div class="pb-item">
+            <div class="pb-item-head">
+              <span class="pb-name">Radiative Forcing</span>
+              <span class="pb-badge pb-badge--warn">At risk</span>
             </div>
-            <div class="distribution-half">
-              <div class="dist-sublabel">Power plant count</div>
-              <svg id="plot-6" viewBox="0 0 260 160" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="pb-bar-track">
+              <div class="pb-bar-fill" style="width: 100%"></div>
+              <div class="pb-bar-limit" style="left: 69%"></div>
+            </div>
+            <div class="pb-note">
+              ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂
+              from fossil fuels
             </div>
           </div>
+          <div class="pb-item">
+            <div class="pb-item-head">
+              <span class="pb-name">Biosphere Integrity (HANPP)</span>
+              <span class="pb-badge pb-badge--exceeded">Exceeded</span>
+            </div>
+            <div class="pb-bar-track">
+              <div class="pb-bar-fill pb-bar-fill--exceeded" style="width: 100%"></div>
+              <div class="pb-bar-limit" style="left: 25%"></div>
+            </div>
+            <div class="pb-note">
+              &gt;75% HANPP observed · safe boundary: &lt;25% — driven by land
+              use change and deforestation
+            </div>
+          </div>
+          <p class="pb-footer">
+            Source: Stockholm Resilience Centre, 2023. Each power plant and
+            each deforestation pixel visible on this map is a contributor.
+          </p>
         </div>
       </section>
     </main>
@@ -459,8 +472,12 @@
       /* Sync driver-tool visibility with deforest toggle state */
       document.addEventListener("deforest-toggled", (e) => {
         const active = e.detail.active;
-        document.getElementById("driver-tool").classList.toggle("hidden", !active);
-        document.getElementById("driver-divider").classList.toggle("hidden", !active);
+        document
+          .getElementById("driver-tool")
+          .classList.toggle("hidden", !active);
+        document
+          .getElementById("driver-divider")
+          .classList.toggle("hidden", !active);
       });
     </script>
   </body>

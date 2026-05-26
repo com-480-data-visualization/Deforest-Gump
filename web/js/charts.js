@@ -4,10 +4,14 @@ const T = 350; // shared transition duration (ms)
 
 /* ── CorrelationScatter ───────────────────────────────────────────────────── */
 
+const SCATTER_FOSSIL = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
+
 export class CorrelationScatter {
-  constructor(id, data, onCountryClick) {
-    this.data = data;
+  constructor(id, correlationData, onCountryClick) {
     this.onCountryClick = onCountryClick;
+    this._selectedCountry = "ALL";
+    // ISO3 → pre-computed global deforest count (x-axis stays stable while panning)
+    this._deforestByCode = new Map(correlationData.map((d) => [d.code, d.deforest_count]));
 
     this.svg = d3.select("#" + id);
     const vb = this.svg.node().viewBox.baseVal;
@@ -15,203 +19,164 @@ export class CorrelationScatter {
     this.W = vb.width - m.left - m.right;
     this.H = vb.height - m.top - m.bottom;
 
-    this.g = this.svg
-      .append("g")
-      .attr("transform", `translate(${m.left},${m.top})`);
+    this.g = this.svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
 
-    const counts = data.map((d) => d.deforest_count);
-    const minX = d3.min(counts);
-    const maxX = d3.max(counts);
-
-    this.xS = d3.scaleLog().domain([minX, maxX]).range([0, this.W]).clamp(true);
+    const counts = correlationData.map((d) => d.deforest_count);
+    this.xS = d3.scaleLog().domain([d3.min(counts), 10000]).range([0, this.W]).clamp(true);
     this.yS = d3.scaleLinear().domain([0, 100]).range([this.H, 0]);
-    this.rS = d3
-      .scaleSqrt()
-      .domain([0, d3.max(data, (d) => d.plant_count)])
-      .range([2, 9]);
+    this.rS = d3.scaleSqrt().domain([0, 1]).range([2, 9]);
 
-    // Grid lines
     const gridG = this.g.append("g");
     [0, 25, 50, 75, 100].forEach((v) => {
-      gridG
-        .append("line")
-        .attr("x1", 0)
-        .attr("x2", this.W)
-        .attr("y1", this.yS(v))
-        .attr("y2", this.yS(v))
-        .attr("stroke", "#dde5dd")
-        .attr("stroke-width", 0.5);
+      gridG.append("line")
+        .attr("x1", 0).attr("x2", this.W)
+        .attr("y1", this.yS(v)).attr("y2", this.yS(v))
+        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
     });
 
-    // X axis ticks
-    const xTicks = this.xS.ticks(5);
-    xTicks.forEach((v) => {
-      this.g
-        .append("text")
-        .attr("class", "tick")
-        .attr("x", this.xS(v))
-        .attr("y", this.H + 9)
-        .attr("text-anchor", "middle")
-        .text(d3.format("~s")(v));
-      gridG
-        .append("line")
-        .attr("x1", this.xS(v))
-        .attr("x2", this.xS(v))
-        .attr("y1", 0)
-        .attr("y2", this.H)
-        .attr("stroke", "#dde5dd")
-        .attr("stroke-width", 0.5);
-    });
+    this._xTickGroup = this.g.append("g");
+    this._updateXAxis();
 
-    // Y axis ticks
     [0, 25, 50, 75, 100].forEach((v) => {
-      this.g
-        .append("text")
-        .attr("class", "tick")
-        .attr("x", -4)
-        .attr("y", this.yS(v))
-        .attr("text-anchor", "end")
-        .attr("dominant-baseline", "middle")
+      this.g.append("text").attr("class", "tick")
+        .attr("x", -4).attr("y", this.yS(v))
+        .attr("text-anchor", "end").attr("dominant-baseline", "middle")
         .text(v + "%");
     });
 
-    // Axis labels
-    this.svg
-      .append("text")
-      .attr("class", "axis-label")
-      .attr("x", m.left + this.W / 2)
-      .attr("y", m.top + this.H + 40)
-      .attr("text-anchor", "middle")
-      .text("Deforestation pixels (log scale)");
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("x", m.left + this.W / 2).attr("y", m.top + this.H + 40)
+      .attr("text-anchor", "middle").text("Deforestation pixels (log scale)");
 
-    this.svg
-      .append("text")
-      .attr("class", "axis-label")
+    this.svg.append("text").attr("class", "axis-label")
       .attr("transform", "rotate(-90)")
-      .attr("x", -(m.top + this.H / 2))
-      .attr("y", 11)
-      .attr("text-anchor", "middle")
-      .text("Fossil fuel capacity %");
+      .attr("x", -(m.top + this.H / 2)).attr("y", 11)
+      .attr("text-anchor", "middle").text("Fossil fuel capacity %");
 
-    // Hover label
-    this.hoverLabel = this.svg
-      .append("text")
-      .attr("class", "scatter-label")
-      .attr("font-size", "7px")
-      .attr("fill", "#1c2e1c")
-      .attr("font-weight", "600")
-      .style("pointer-events", "none")
-      .attr("visibility", "hidden");
-
-    this._drawDots();
+    this.hoverLabel = this.svg.append("text")
+      .attr("class", "scatter-label").attr("font-size", "7px")
+      .attr("fill", "#1c2e1c").attr("font-weight", "600")
+      .style("pointer-events", "none").attr("visibility", "hidden");
   }
 
-  _drawDots() {
-    const { g, xS, yS, rS, hoverLabel, W, onCountryClick } = this;
-    const mLeft = 46;
-    const mTop = 10;
+  _updateXAxis() {
+    const tr = d3.transition().duration(400).ease(d3.easeCubicOut);
+    const ticks = [10, 100, 1000, 10000];
 
-    // Dots enter with r=0 and fade in with a staggered delay
-    g.selectAll("circle.dot")
-      .data(this.data)
-      .enter()
-      .append("circle")
-      .attr("class", "dot")
+    const lines = this._xTickGroup.selectAll("line.x-grid").data(ticks);
+    lines.enter().append("line").attr("class", "x-grid")
+      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
+      .attr("y1", 0).attr("y2", this.H)
+      .attr("x1", (d) => this.xS(d)).attr("x2", (d) => this.xS(d))
+      .attr("opacity", 0)
+      .merge(lines).transition(tr)
+      .attr("x1", (d) => this.xS(d)).attr("x2", (d) => this.xS(d))
+      .attr("opacity", 1);
+    lines.exit().transition(tr).attr("opacity", 0).remove();
+
+    const texts = this._xTickGroup.selectAll("text.x-tick").data(ticks);
+    texts.enter().append("text").attr("class", "tick x-tick")
+      .attr("y", this.H + 9).attr("text-anchor", "middle")
+      .attr("x", (d) => this.xS(d)).attr("opacity", 0)
+      .merge(texts).transition(tr)
+      .attr("x", (d) => this.xS(d))
+      .attr("opacity", 1)
+      .text((d) => d3.format("~s")(d));
+    texts.exit().transition(tr).attr("opacity", 0).remove();
+  }
+
+  _setupDotHandlers(sel) {
+    const { xS, yS, rS, hoverLabel, W, onCountryClick } = this;
+    const mLeft = 46, mTop = 10;
+    sel
       .attr("cx", (d) => xS(d.deforest_count))
       .attr("cy", (d) => yS(d.fossil_pct))
-      .attr("r", 0)
       .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)])
-      .attr("fill-opacity", 0)
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 0.6)
+      .attr("stroke", "#fff").attr("stroke-width", 0.6)
       .style("cursor", "pointer")
       .on("mouseover", function (d) {
-        d3.select(this)
-          .transition()
-          .duration(120)
-          .attr("stroke", "#1c2e1c")
-          .attr("stroke-width", 1.5)
-          .attr("fill-opacity", 1);
+        d3.select(this).transition().duration(120)
+          .attr("stroke", "#1c2e1c").attr("stroke-width", 1.5).attr("fill-opacity", 1);
         const cx = mLeft + xS(d.deforest_count);
         const cy = mTop + yS(d.fossil_pct);
         const labelX = cx > W * 0.75 ? cx - 4 : cx + 4;
-        const anchor = cx > W * 0.75 ? "end" : "start";
-        hoverLabel
-          .attr("x", labelX)
-          .attr("y", cy - rS(d.plant_count) - 3)
-          .attr("text-anchor", anchor)
-          .text(`${d.country} — ${d.fossil_pct}% fossil`)
+        hoverLabel.attr("x", labelX).attr("y", cy - rS(d.plant_count) - 3)
+          .attr("text-anchor", cx > W * 0.75 ? "end" : "start")
+          .text(`${d.country} — ${d.fossil_pct.toFixed(1)}% fossil`)
           .attr("visibility", "visible");
       })
       .on("mouseout", function () {
-        d3.select(this)
-          .transition()
-          .duration(120)
-          .attr("stroke", "#fff")
-          .attr("stroke-width", 0.6)
-          .attr("fill-opacity", 0.75);
+        d3.select(this).transition().duration(120)
+          .attr("stroke", "#fff").attr("stroke-width", 0.6).attr("fill-opacity", 0.75);
         hoverLabel.attr("visibility", "hidden");
       })
-      .on("click", (d) => onCountryClick(d.country))
-      .transition()
-      .duration(500)
-      .delay((d, i) => i * 4)
-      .ease(d3.easeCubicOut)
-      .attr("r", (d) => rS(d.plant_count))
-      .attr("fill-opacity", 0.75);
-
-    this._addKeyAnnotations();
+      .on("click", (d) => onCountryClick(this._selectedCountry === d.country ? "ALL" : d.country));
   }
 
-  /* Annotate the four most story-relevant outliers directly on the chart. */
-  _addKeyAnnotations() {
-    const KEY = {
-      "Russian Federation": "Russia",
-      Brazil: "Brazil",
-      Indonesia: "Indonesia",
-      "Congo, The Democratic Republic of the": "DRC",
-    };
-    this.data
-      .filter((d) => KEY[d.country])
-      .forEach((d) => {
-        const cx = this.xS(d.deforest_count);
-        const cy = this.yS(d.fossil_pct);
-        const label = KEY[d.country];
-        const anchor = cx > this.W * 0.62 ? "end" : "start";
-        const dx = anchor === "end" ? -7 : 7;
-        this.g
-          .append("text")
-          .attr("class", "scatter-annotation")
-          .attr("x", cx + dx)
-          .attr("y", cy - 5)
-          .attr("text-anchor", anchor)
-          .attr("font-size", "7px")
-          .attr("fill", "#3a4a3a")
-          .attr("font-weight", "700")
-          .attr("pointer-events", "none")
-          .text(label);
-      });
+  /* Recompute per-country stats from the currently visible plants and redraw.
+     deforestByIso3: Map<iso3,count> from getDeforestStatsByCountry, or null to
+     fall back to the pre-computed global values from correlationData. */
+  update(plants, deforestByIso3) {
+    const byIso3 = new Map();
+    plants.forEach((p) => {
+      if (!p.iso3 || !p.country) return;
+      if (!byIso3.has(p.iso3)) {
+        byIso3.set(p.iso3, { country: p.country, iso3: p.iso3, total: 0, fossil: 0, count: 0, fuelCap: {} });
+      }
+      const c = byIso3.get(p.iso3);
+      const cap = p.capacity || 0;
+      c.total += cap;
+      c.count++;
+      const nf = normalizeFuel(p.fuel);
+      c.fuelCap[nf] = (c.fuelCap[nf] || 0) + cap;
+      if (SCATTER_FOSSIL.has(p.fuel)) c.fossil += cap;
+    });
+
+    const newData = [...byIso3.values()]
+      .map((c) => ({
+        country: c.country,
+        iso3: c.iso3,
+        fossil_pct: c.total > 0 ? (c.fossil / c.total) * 100 : 0,
+        plant_count: c.count,
+        dominant_fuel: Object.entries(c.fuelCap).sort((a, b) => b[1] - a[1])[0]?.[0] || "Other",
+        deforest_count: (deforestByIso3 ?? this._deforestByCode).get(c.iso3) || 0,
+      }))
+      .filter((d) => d.deforest_count > 0);
+
+    this.rS.domain([0, d3.max(newData, (d) => d.plant_count) || 1]);
+
+    const t = d3.transition().duration(400).ease(d3.easeCubicOut);
+    const dots = this.g.selectAll("circle.dot").data(newData, (d) => d.iso3);
+
+    const entering = dots.enter().append("circle").attr("class", "dot")
+      .attr("r", 0).attr("fill-opacity", 0);
+    this._setupDotHandlers(entering);
+
+    dots.exit().remove();
+
+    dots.transition(t)
+      .attr("cx", (d) => this.xS(d.deforest_count))
+      .attr("cy", (d) => this.yS(d.fossil_pct))
+      .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)]);
+
+    this._applyDotStyles();
   }
 
-  /* Highlight a specific country's dot; pass "ALL" to reset. */
-  highlightCountry(country) {
-    this.g
-      .selectAll("circle.dot")
-      .transition()
-      .duration(200)
-      .attr("fill-opacity", (d) =>
-        country === "ALL" || d.country === country ? 0.85 : 0.12,
-      )
+  _applyDotStyles() {
+    const sel = this._selectedCountry;
+    this.g.selectAll("circle.dot").transition().duration(200)
+      .attr("fill-opacity", (d) => sel !== "ALL" && d.country !== sel ? 0.12 : 0.75)
       .attr("r", (d) => {
         const base = this.rS(d.plant_count);
-        return country !== "ALL" && d.country === country ? base * 1.5 : base;
+        return sel !== "ALL" && d.country === sel ? base * 1.5 : base;
       })
-      .attr("stroke-width", (d) =>
-        country !== "ALL" && d.country === country ? 1.5 : 0.6,
-      )
-      .attr("stroke", (d) =>
-        country !== "ALL" && d.country === country ? "#1c2e1c" : "#fff",
-      );
+      .attr("stroke-width", (d) => sel !== "ALL" && d.country === sel ? 1.5 : 0.6)
+      .attr("stroke", (d) => sel !== "ALL" && d.country === sel ? "#1c2e1c" : "#fff");
+  }
+
+  highlightCountry(country) {
+    this._selectedCountry = country;
+    this._applyDotStyles();
   }
 }
 
@@ -563,94 +528,90 @@ export class DeforestHistogram {
   }
 }
 
-/* ── CapacityPieChart ─────────────────────────────────────────────────────── */
+/* ── CapacityTreemap ──────────────────────────────────────────────────────── */
 
-export class CapacityPieChart {
+export class CapacityTreemap {
   constructor(id, data) {
     this.data = data;
     this.svg = d3.select("#" + id);
     const vb = this.svg.node().viewBox.baseVal;
-    const m = { top: 6, right: 6, bottom: 6, left: 6 };
-    const W = vb.width - m.left - m.right;
-    const H = vb.height - m.top - m.bottom;
-    this.R = Math.min(W, H) / 2;
-
-    this.g = this.svg
-      .append("g")
-      .attr("transform", `translate(${m.left + W / 2},${m.top + H / 2})`);
-
-    this.arc = d3.arc().innerRadius(this.R * 0.42).outerRadius(this.R);
-    this.pie = d3
-      .pie()
-      .value((d) => d.value)
-      .sort(null);
+    this.W = vb.width;
+    this.H = vb.height;
+    this.layout = d3.treemap().size([this.W, this.H]).padding(2).round(true);
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
 
     this.data.forEach((d) => {
-      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng)
-        return;
+      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng) return;
       if (activeCountry !== "ALL" && d.country !== activeCountry) return;
       const fuel = normalizeFuel(d.fuel);
       if (!activeFuels.includes(fuel)) return;
       sums[fuel] += d.capacity || 0;
     });
 
-    const pieData = FUELS.map((f) => ({ fuel: f, value: sums[f] }));
-    const total = d3.sum(pieData, (d) => d.value);
-    const pieLabel = document.getElementById("pie-label");
-    const arc = this.arc;
-
+    const total = d3.sum(Object.values(sums));
     document.getElementById("total-mw").textContent =
       total > 0 ? d3.format(",.0f")(total) + " MW" : "—";
 
-    const slices = this.g.selectAll("path.slice").data(this.pie(pieData));
+    const hoverEl = document.getElementById("treemap-label");
 
-    // Enter: initialise _current for the tween to interpolate from
-    slices
-      .enter()
-      .append("path")
-      .attr("class", "slice")
-      .each(function (d) {
-        this._current = d;
-      })
-      .attr("d", arc)
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 0.5);
+    const root = d3
+      .hierarchy({ children: FUELS.map((f) => ({ fuel: f, value: sums[f] })) })
+      .sum((d) => d.value || 0);
+    this.layout(root);
 
-    const merged = this.g.selectAll("path.slice");
+    const t = d3.transition().duration(T);
+    const cells = this.svg
+      .selectAll("g.tm-cell")
+      .data(root.leaves(), (d) => d.data.fuel);
+
+    const entering = cells.enter().append("g").attr("class", "tm-cell");
+    entering.append("rect").attr("rx", 2).attr("ry", 2);
+    entering
+      .append("text")
+      .attr("class", "tm-label")
+      .attr("pointer-events", "none")
+      .attr("fill", "#fff")
+      .attr("font-weight", "600");
+
+    const merged = entering.merge(cells);
 
     merged
+      .select("rect")
       .attr("fill", (d) => FUEL_COLORS[d.data.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.data.fuel) ? 0.85 : 0.2))
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 0.5)
+      .style("cursor", (d) => (d.value > 0 ? "pointer" : "default"))
       .on("mouseover", function (d) {
-        if (d.data.value === 0) return;
-        d3.select(this).transition().duration(120).attr("opacity", 1);
-        const pct = ((d.data.value / total) * 100).toFixed(1);
-        pieLabel.textContent = `${d.data.fuel} — ${d3.format(",.0f")(d.data.value)} MW (${pct}%)`;
+        if (d.value === 0) return;
+        d3.select(this).attr("opacity", 1);
+        const pct = ((d.value / total) * 100).toFixed(1);
+        hoverEl.textContent = `${d.data.fuel} — ${d3.format(",.0f")(d.value)} MW (${pct}%)`;
       })
       .on("mouseout", function (d) {
-        d3.select(this)
-          .transition()
-          .duration(120)
-          .attr("opacity", activeFuels.includes(d.data.fuel) ? 0.85 : 0.2);
-        pieLabel.textContent = "Hover a slice";
+        d3.select(this).attr("opacity", activeFuels.includes(d.data.fuel) ? 0.85 : 0.2);
+        hoverEl.textContent = "Hover a cell";
       });
 
-    // Smooth arc tween on every update
     merged
-      .transition()
-      .duration(T)
-      .attrTween("d", function (d) {
-        const interp = d3.interpolate(this._current, d);
-        this._current = interp(1);
-        return (t) => arc(interp(t));
-      });
+      .transition(t)
+      .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
 
-    slices.exit().remove();
+    merged
+      .select("rect")
+      .transition(t)
+      .attr("width", (d) => Math.max(0, d.x1 - d.x0))
+      .attr("height", (d) => Math.max(0, d.y1 - d.y0));
+
+    merged
+      .select("text.tm-label")
+      .text((d) => (d.x1 - d.x0 > 30 && d.y1 - d.y0 > 13 ? d.data.fuel : ""))
+      .attr("font-size", (d) => (d.x1 - d.x0 > 48 ? "7px" : "6px"))
+      .transition(t)
+      .attr("x", 4)
+      .attr("y", (d) => Math.min(11, (d.y1 - d.y0) * 0.65));
+
+    cells.exit().remove();
   }
 }

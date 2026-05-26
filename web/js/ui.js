@@ -80,15 +80,14 @@ export function buildCountrySelect(countries, onChange) {
 
 export function showDetail(plant, nearestDriver = null) {
   const fuelColor = normalizeFuel(plant.fuel);
-  const deforestRow = nearestDriver
-    ? `<div class="detail-row">
-        <span class="detail-key">Nearby deforest.</span>
-        <span class="detail-val">
-          <span class="detail-fuel-dot" style="background:${DEFOREST_COLORS[nearestDriver.driver]}"></span>
-          ${escapeHtml(nearestDriver.cause)}
-        </span>
-      </div>`
-    : "";
+  const deforestRow = `<div class="detail-row">
+      <span class="detail-key">Nearby deforest.</span>
+      <span class="detail-val${nearestDriver ? "" : " detail-empty"}">
+        ${nearestDriver
+          ? `<span class="detail-fuel-dot" style="background:${DEFOREST_COLORS[nearestDriver.driver]}"></span>${escapeHtml(nearestDriver.cause)}`
+          : "—"}
+      </span>
+    </div>`;
   document.getElementById("detail-content").innerHTML = `
     <div class="detail-name">${escapeHtml(plant.name)}</div>
     <div class="detail-row">
@@ -114,71 +113,101 @@ export function showDetail(plant, nearestDriver = null) {
 }
 
 export function clearDetail() {
-  document.getElementById("detail-content").innerHTML =
-    '<p class="detail-placeholder">Hover or click a marker on the map to see details about a power plant.</p>';
+  document.getElementById("detail-content").innerHTML = `
+    <div class="detail-name detail-empty">Hover a marker…</div>
+    <div class="detail-row">
+      <span class="detail-key">Country</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-key">Fuel</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-key">Capacity</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-key">Coordinates</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-key">Nearby deforest.</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>`;
 }
 
 /* ── Deforestation Stats Panel ────────────────────────────────────────────── */
+
+function ensureDeforestRows() {
+  const rowsEl = document.getElementById("deforest-stats-rows");
+  if (!rowsEl || rowsEl.querySelector("[data-driver]")) return;
+  rowsEl.innerHTML = Object.entries(DEFOREST_CAUSES).map(([driver, label]) => `
+    <div class="deforest-stat-row" data-driver="${driver}">
+      <span class="legend-dot" style="background:${DEFOREST_COLORS[driver]};flex-shrink:0"></span>
+      <span class="deforest-stat-label">${label}</span>
+      <div class="deforest-stat-bar-wrap">
+        <div class="deforest-stat-bar" style="width:0%;background:${DEFOREST_COLORS[driver]}"></div>
+      </div>
+      <span class="deforest-stat-pct">0%</span>
+    </div>`).join("");
+}
 
 export function showDeforestStats(driverCounts) {
   const statsEl = document.getElementById("deforest-stats");
   const rowsEl = document.getElementById("deforest-stats-rows");
   if (!statsEl || !rowsEl) return;
+  ensureDeforestRows();
+  statsEl.classList.remove("hidden");
 
   const total = Object.values(driverCounts).reduce((s, v) => s + v, 0);
-  if (total === 0) {
-    rowsEl.innerHTML =
-      '<p class="detail-placeholder">No deforestation pixels in current view.</p>';
-    statsEl.classList.remove("hidden");
-    return;
-  }
-
-  rowsEl.innerHTML = Object.entries(DEFOREST_CAUSES)
-    .map(([driver, label]) => {
-      const count = driverCounts[driver] || 0;
-      const pct = total > 0 ? (count / total) * 100 : 0;
-      return `
-        <div class="deforest-stat-row">
-          <span class="legend-dot" style="background:${DEFOREST_COLORS[driver]};flex-shrink:0"></span>
-          <span class="deforest-stat-label">${label}</span>
-          <div class="deforest-stat-bar-wrap">
-            <div class="deforest-stat-bar" style="width:${pct.toFixed(1)}%;background:${DEFOREST_COLORS[driver]}"></div>
-          </div>
-          <span class="deforest-stat-pct">${pct.toFixed(0)}%</span>
-        </div>`;
-    })
-    .join("");
-
-  statsEl.classList.remove("hidden");
+  Object.entries(DEFOREST_CAUSES).forEach(([driver]) => {
+    const row = rowsEl.querySelector(`[data-driver="${driver}"]`);
+    if (!row) return;
+    const pct = total > 0 ? ((driverCounts[driver] || 0) / total) * 100 : 0;
+    row.querySelector(".deforest-stat-bar").style.width = pct.toFixed(1) + "%";
+    row.querySelector(".deforest-stat-pct").textContent = pct.toFixed(0) + "%";
+  });
 }
 
 export function hideDeforestStats() {
-  document.getElementById("deforest-stats")?.classList.add("hidden");
+  const statsEl = document.getElementById("deforest-stats");
+  const rowsEl = document.getElementById("deforest-stats-rows");
+  if (!statsEl) return;
+  rowsEl?.querySelectorAll("[data-driver] .deforest-stat-bar")
+    .forEach((bar) => { bar.style.width = "0%"; });
+  rowsEl?.querySelectorAll("[data-driver] .deforest-stat-pct")
+    .forEach((el) => { el.textContent = "0%"; });
+  statsEl.classList.add("hidden");
 }
 
 /* ── Plant Stats Panel ────────────────────────────────────────────────────── */
 
+function ensurePlantRows() {
+  const rowsEl = document.getElementById("plant-stats-rows");
+  if (!rowsEl || rowsEl.querySelector("[data-fuel]")) return;
+  rowsEl.innerHTML = FUELS.map((fuel) => `
+    <div class="deforest-stat-row" data-fuel="${fuel}">
+      <span class="legend-dot" style="background:${FUEL_COLORS[fuel]};flex-shrink:0"></span>
+      <span class="deforest-stat-label">${fuel}</span>
+      <div class="deforest-stat-bar-wrap">
+        <div class="deforest-stat-bar" style="width:0%;background:${FUEL_COLORS[fuel]}"></div>
+      </div>
+      <span class="deforest-stat-pct">0%</span>
+    </div>`).join("");
+}
+
 export function showPlantStats(fuelCounts) {
   const rowsEl = document.getElementById("plant-stats-rows");
   if (!rowsEl) return;
+  ensurePlantRows();
 
   const total = Object.values(fuelCounts).reduce((s, v) => s + v, 0);
-  if (total === 0) {
-    rowsEl.innerHTML = '<p class="detail-placeholder">No plants in current view.</p>';
-    return;
-  }
-
-  rowsEl.innerHTML = FUELS.map((fuel) => {
-    const count = fuelCounts[fuel] || 0;
-    const pct = (count / total) * 100;
-    return `
-      <div class="deforest-stat-row">
-        <span class="legend-dot" style="background:${FUEL_COLORS[fuel]};flex-shrink:0"></span>
-        <span class="deforest-stat-label">${fuel}</span>
-        <div class="deforest-stat-bar-wrap">
-          <div class="deforest-stat-bar" style="width:${pct.toFixed(1)}%;background:${FUEL_COLORS[fuel]}"></div>
-        </div>
-        <span class="deforest-stat-pct">${pct.toFixed(0)}%</span>
-      </div>`;
-  }).join("");
+  FUELS.forEach((fuel) => {
+    const row = rowsEl.querySelector(`[data-fuel="${fuel}"]`);
+    if (!row) return;
+    const pct = total > 0 ? ((fuelCounts[fuel] || 0) / total) * 100 : 0;
+    row.querySelector(".deforest-stat-bar").style.width = pct.toFixed(1) + "%";
+    row.querySelector(".deforest-stat-pct").textContent = pct.toFixed(0) + "%";
+  });
 }
