@@ -790,7 +790,7 @@ main {
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .colophon {
-  background: var(--surface);
+  background: var(--bg);
   border-top: 1px solid var(--ink);
   padding: 18px 32px 28px;
   font-family: var(--mono);

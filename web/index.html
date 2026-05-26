@@ -45,7 +45,7 @@
           >
         </div>
         <div class="meta">
-          <span>Interactive</span>
+          <span>Interactive news article</span>
         </div>
       </div>
     </header>
@@ -192,75 +192,82 @@
 
     <!-- ── Toolbar / filters ─────────────────────────────────────────────── -->
     <div class="toolbar-sticky">
-    <div id="controls" class="toolbar">
-      <div class="tool">
-        <span class="tool-label">Country</span>
-        <div class="select-wrap">
-          <select id="country-select">
-            <option value="ALL">All countries</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="tool-divider"></div>
-
-      <div class="tool">
-        <span class="tool-label">Overlay</span>
-        <div class="toggle-row toggle-group">
-          <button id="plants-toggle" class="tgl active" data-overlay="plants">
-            <span class="glyph toggle-icon"></span>
-            Power plants
-            <span class="toggle-pill"></span>
-          </button>
-          <button id="deforest-toggle" class="tgl" data-overlay="deforest">
-            <span class="glyph toggle-icon"></span>
-            Deforestation
-            <span class="toggle-pill"></span>
-          </button>
-          <button id="population-toggle" class="tgl" data-overlay="population">
-            <span class="glyph toggle-icon"></span>
-            Population
-            <span class="toggle-pill"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="tool-divider" id="fuel-divider"></div>
-
-      <div class="tool" id="fuel-tool">
-        <span class="tool-label">Fuel</span>
-        <div class="chips" id="fuel-chips">
-          <!-- populated by JS -->
-        </div>
-      </div>
-
-      <div class="tool-divider hidden" id="driver-divider"></div>
-      <div class="tool driver-tool hidden" id="driver-tool">
-        <span class="tool-label">Deforest. driver</span>
-        <div class="chips" id="driver-chips"></div>
-      </div>
-
-      <div class="tool-divider hidden" id="population-divider"></div>
-      <div class="tool hidden" id="population-tool">
-        <span class="tool-label">Population</span>
-        <div class="pop-filter">
-          <div class="pop-gradient-wrap">
-            <div class="pop-gradient-bar" id="pop-gradient-bar"></div>
-            <input
-              type="range"
-              id="population-slider"
-              class="pop-slider"
-              min="0"
-              max="100"
-              value="0"
-              step="1"
-            />
+      <div id="controls" class="toolbar">
+        <div class="tool">
+          <span class="tool-label">Country</span>
+          <div class="select-wrap">
+            <select id="country-select">
+              <option value="ALL">All countries</option>
+            </select>
           </div>
-          <span class="pop-threshold-label" id="pop-threshold-label">All</span>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="tool">
+          <span class="tool-label">Overlay</span>
+          <div class="toggle-row toggle-group">
+            <button id="plants-toggle" class="tgl active" data-overlay="plants">
+              <span class="glyph toggle-icon"></span>
+              Power plants
+              <span class="toggle-pill"></span>
+            </button>
+            <button id="deforest-toggle" class="tgl" data-overlay="deforest">
+              <span class="glyph toggle-icon"></span>
+              Deforestation
+              <span class="toggle-pill"></span>
+            </button>
+            <button
+              id="population-toggle"
+              class="tgl"
+              data-overlay="population"
+            >
+              <span class="glyph toggle-icon"></span>
+              Population
+              <span class="toggle-pill"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tool-divider" id="fuel-divider"></div>
+
+        <div class="tool" id="fuel-tool">
+          <span class="tool-label">Fuel</span>
+          <div class="chips" id="fuel-chips">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <div class="tool-divider hidden" id="driver-divider"></div>
+        <div class="tool driver-tool hidden" id="driver-tool">
+          <span class="tool-label">Deforest. driver</span>
+          <div class="chips" id="driver-chips"></div>
+        </div>
+
+        <div class="tool-divider hidden" id="population-divider"></div>
+        <div class="tool hidden" id="population-tool">
+          <span class="tool-label">Population</span>
+          <div class="pop-filter">
+            <div class="pop-gradient-wrap">
+              <div class="pop-gradient-bar" id="pop-gradient-bar"></div>
+              <input
+                type="range"
+                id="population-slider"
+                class="pop-slider"
+                min="0"
+                max="100"
+                value="0"
+                step="1"
+              />
+            </div>
+            <span class="pop-threshold-label" id="pop-threshold-label"
+              >All</span
+            >
+          </div>
         </div>
       </div>
     </div>
-    </div><!-- /.toolbar-sticky -->
+    <!-- /.toolbar-sticky -->
 
     <main>
       <!-- ── Map + side panel ────────────────────────────────────────────── -->
@@ -391,7 +398,7 @@
           <div class="panel-card card chart-card" id="top-deforest-card">
             <div class="card-head">
               <h3 class="card-title">Top deforested countries</h3>
-              <span class="card-meta">In current view</span>
+              <span class="card-meta">Current view</span>
             </div>
             <svg
               id="plot-8"
@@ -399,7 +406,6 @@
               preserveAspectRatio="xMidYMid meet"
             ></svg>
           </div>
-
         </div>
       </section>
 
@@ -437,11 +443,11 @@
               inaccessible interiors.
             </p>
             <p class="axis-body">
-              Each dot below is a country. The horizontal axis shows how much
-              of its electricity comes from fossil fuels; the vertical axis
-              shows what share of its deforestation is <em>definitive</em> —
-              commodity agriculture, shifting cultivation, and urbanization,
-              the causes that leave no forest behind.
+              Each dot below is a country. The horizontal axis shows how much of
+              its electricity comes from fossil fuels; the vertical axis shows
+              what share of its deforestation is <em>definitive</em> — commodity
+              agriculture, shifting cultivation, and urbanization, the causes
+              that leave no forest behind.
             </p>
             <div class="axis-chart-wrap">
               <svg
@@ -450,8 +456,8 @@
                 preserveAspectRatio="xMidYMid meet"
               ></svg>
               <div class="chart-hint chart-foot">
-                Each dot = one country · size = deforestation pixels ·
-                color = dominant fuel · hover for details
+                Each dot = one country · size = deforestation pixels · color =
+                dominant fuel · hover for details
               </div>
             </div>
             <p class="axis-body">
