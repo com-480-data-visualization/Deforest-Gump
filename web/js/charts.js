@@ -1020,10 +1020,8 @@ export class FuelCountryOverlap extends BarChart {
   constructor(id, data) {
     super(id, data, { leftMargin: 4, yLabel: "" });
     this.svg.selectAll(".axis-label").remove();
-    // Shrink fuel-type tick labels
     this.g.selectAll("text.tick").attr("font-size", "7px");
     this.yS.domain([0, 100]);
-    this._updateYGrid();
 
     this.placeholder = this.g.append("text")
       .attr("x", this.W / 2).attr("y", this.H / 2)
@@ -1034,16 +1032,7 @@ export class FuelCountryOverlap extends BarChart {
   }
 
   _updateYGrid() {
-    // Single reference line at 50% — no tick labels
-    const t = d3.transition().duration(T);
-    const line = this.gridGroup.selectAll("line.y-grid").data([50]);
-    line.enter().append("line").attr("class", "y-grid")
-      .attr("x1", 0).attr("x2", this.W)
-      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
-      .attr("y1", d => this.yS(d)).attr("y2", d => this.yS(d))
-      .merge(line).transition(t)
-      .attr("y1", d => this.yS(d)).attr("y2", d => this.yS(d));
-    line.exit().remove();
+    this.gridGroup.selectAll("line.y-grid").remove();
     this.gridGroup.selectAll("text.y-tick").remove();
   }
 
@@ -1054,6 +1043,7 @@ export class FuelCountryOverlap extends BarChart {
     if (!hasDeforest) {
       const t = d3.transition().duration(T).ease(d3.easeCubicOut);
       this.g.selectAll("rect.bar").transition(t).attr("y", this.H).attr("height", 0);
+      this.g.selectAll("text.bar-pct").remove();
       return;
     }
 
@@ -1071,6 +1061,31 @@ export class FuelCountryOverlap extends BarChart {
     this._updateYGrid();
 
     const barData = FUELS.map((f) => ({ fuel: f, val: pctByFuel[f] }));
-    this._updateBars(barData, activeFuels, (v) => v.toFixed(0) + "%");
+    this._updateBars(barData, FUELS, (v) => v.toFixed(0) + "%");
+
+    // Strip hover — labels are always visible
+    this.g.selectAll("rect.bar")
+      .on("mouseover", null)
+      .on("mouseout", null)
+      .style("cursor", "default")
+      .attr("opacity", 0.85);
+
+    // Always-visible percentage labels above bars
+    const { xS, yS, H } = this;
+    const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+    const labels = this.g.selectAll("text.bar-pct").data(barData, (d) => d.fuel);
+    labels.enter().append("text")
+      .attr("class", "bar-pct")
+      .attr("text-anchor", "middle")
+      .attr("font-size", "8px")
+      .attr("fill", "var(--ink-2)")
+      .style("pointer-events", "none")
+      .attr("y", H)
+      .merge(labels)
+      .transition(t)
+      .attr("x", (d) => xS(d.fuel) + xS.bandwidth() / 2)
+      .attr("y", (d) => d.val > 0 ? yS(d.val) - 3 : H)
+      .text((d) => d.val > 0 ? d.val.toFixed(0) + "%" : "");
+    labels.exit().remove();
   }
 }
