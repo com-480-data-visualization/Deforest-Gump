@@ -17,13 +17,14 @@ export function buildMarkers(map, data, renderer, getNearest = null) {
       weight: 0.8,
       fillOpacity: 0.75,
     });
-    m.on("click", () =>
-      showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null),
-    );
-    m.on("mouseover", () =>
-      showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null),
-    );
-    m.on("mouseout", clearDetail);
+    const isVisible = () => m.options.opacity > 0;
+    m.on("click", () => {
+      if (isVisible()) showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
+    });
+    m.on("mouseover", () => {
+      if (isVisible()) showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
+    });
+    m.on("mouseout", () => { if (isVisible()) clearDetail(); });
     m.plantData = d;
     m.addTo(group);
     markers.push(m);
