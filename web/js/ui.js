@@ -18,11 +18,12 @@ function syncToolbarHeight() {
 syncToolbarHeight();
 new ResizeObserver(syncToolbarHeight).observe(toolbar);
 
-/* ── Intro banner ─────────────────────────────────────────────────────────── */
+/* ── Deforestation driver tool visibility ─────────────────────────────────── */
 
-const introBanner = document.getElementById("intro-banner");
-document.getElementById("intro-dismiss").addEventListener("click", () => {
-  introBanner.classList.add("intro-hidden");
+document.addEventListener("deforest-toggled", (e) => {
+  const active = e.detail.active;
+  document.getElementById("driver-tool").classList.toggle("hidden", !active);
+  document.getElementById("driver-divider").classList.toggle("hidden", !active);
 });
 
 /* ── Loading overlay ──────────────────────────────────────────────────────── */
