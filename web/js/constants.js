@@ -30,7 +30,11 @@ export const DEFOREST_CAUSES = {
   5: "Urbanization",
 };
 
+export const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil"]);
+
 export const normalizeFuel = (raw) => (FUELS.includes(raw) ? raw : "Other");
+
+export const isFossil = (raw) => FOSSIL_FUELS.has(normalizeFuel(raw));
 
 export const getRadius = (cap) =>
   !cap || cap <= 0 ? 3 : Math.max(Math.log(cap + 1), 2);

@@ -1018,7 +1018,10 @@ export class FossilGauge {
 
 export class FuelCountryOverlap extends BarChart {
   constructor(id, data) {
-    super(id, data, { leftMargin: 30, yLabel: "% countries" });
+    super(id, data, { leftMargin: 4, yLabel: "" });
+    this.svg.selectAll(".axis-label").remove();
+    // Shrink fuel-type tick labels
+    this.g.selectAll("text.tick").attr("font-size", "7px");
     this.yS.domain([0, 100]);
     this._updateYGrid();
 
@@ -1028,6 +1031,20 @@ export class FuelCountryOverlap extends BarChart {
       .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
       .style("font-style", "italic")
       .text("Enable deforestation overlay");
+  }
+
+  _updateYGrid() {
+    // Single reference line at 50% — no tick labels
+    const t = d3.transition().duration(T);
+    const line = this.gridGroup.selectAll("line.y-grid").data([50]);
+    line.enter().append("line").attr("class", "y-grid")
+      .attr("x1", 0).attr("x2", this.W)
+      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
+      .attr("y1", d => this.yS(d)).attr("y2", d => this.yS(d))
+      .merge(line).transition(t)
+      .attr("y1", d => this.yS(d)).attr("y2", d => this.yS(d));
+    line.exit().remove();
+    this.gridGroup.selectAll("text.y-tick").remove();
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry, deforestByIso3) {

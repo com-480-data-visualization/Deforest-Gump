@@ -173,7 +173,7 @@ Promise.all([
       fuelDeforestChart.update(s, n, w, e, fuels, country, deforestByIso3);
       topDeforestChart.update(deforestByIso3);
       regionCompass.update(visiblePlants, deforestByIso3);
-      fuelOverlapChart.update(s, n, w, e, fuels, country, deforestByIso3);
+      fuelOverlapChart.update(-90, 90, -180, 180, FUELS, "ALL", getDeforestStatsByCountry(-90, 90, -180, 180));
     }
 
     function getActiveDrivers() {

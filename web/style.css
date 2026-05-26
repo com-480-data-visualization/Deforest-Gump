@@ -1266,7 +1266,7 @@ main .top-row {
 /* ── Insight cards ─────────────────────────────────────────────────────── */
 .insight-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 18px;
 }
 .insight-card {
@@ -1302,6 +1302,17 @@ main .top-row {
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink-2);
+}
+.insight-card--wide {
+  align-items: stretch;
+}
+.insight-chart-wrap {
+  margin-top: 14px;
+}
+.insight-chart-wrap svg {
+  width: 100%;
+  max-width: 380px;
+  display: block;
 }
 
 /* ── Planetary Boundaries panel ────────────────────────────────────────── */
