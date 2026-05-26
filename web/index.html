@@ -259,6 +259,10 @@
                 <span class="detail-val detail-empty">—</span>
               </div>
               <div class="detail-row">
+                <span class="detail-key">Energy type</span>
+                <span class="detail-val detail-empty">—</span>
+              </div>
+              <div class="detail-row">
                 <span class="detail-key">Capacity</span>
                 <span class="detail-val detail-empty">—</span>
               </div>
@@ -387,17 +391,30 @@
             </p>
           </div>
         </div>
-        <div class="insight-card">
+        <div class="insight-card insight-card--wide">
           <div class="insight-num insight-num--forest">≠</div>
           <div class="insight-text">
             <strong>Energy type does not predict deforestation cause.</strong>
             <p>
-              The scatter below shows no simple correlation: Brazil has a
-              hydro-dominated grid yet suffers the world's second-largest
-              deforestation count, driven by commodity agriculture. Use the
-              <em>Deforestation driver</em> filter to isolate the specific
-              pressure in each region.
+              The chart shows the share of countries in the current view where
+              each fuel type co-exists with deforestation. Renewable fuels —
+              hydro, wind, solar — appear alongside deforestation nearly as often
+              as coal or gas. Brazil's hydro-dominated grid yet world-leading
+              forest loss is the clearest example: the pressure comes from
+              commodity agriculture, not power plants. Use the
+              <em>Deforestation driver</em> filter to isolate the specific cause
+              in each region.
             </p>
+            <div class="insight-chart-wrap">
+              <svg
+                id="plot-11"
+                viewBox="0 0 260 140"
+                preserveAspectRatio="xMidYMid meet"
+              ></svg>
+              <div class="chart-hint chart-foot">
+                % of countries with that fuel <em>and</em> deforestation · higher = more co-present
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -467,19 +484,6 @@
           <div class="chart-hint chart-foot">
             Higher = fuel found in more deforested countries
           </div>
-        </div>
-
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Fuel–forest co-presence</div>
-            <div class="subtitle">% of countries with fuel AND deforestation · current view</div>
-          </div>
-          <svg
-            id="plot-11"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-          <div class="chart-hint chart-foot">Higher = fuel more co-present with deforestation</div>
         </div>
 
         <div class="chart-card" id="pb-card">

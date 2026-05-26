@@ -2,6 +2,7 @@ import {
   FUELS,
   FUEL_COLORS,
   normalizeFuel,
+  isFossil,
   escapeHtml,
   DEFOREST_COLORS,
   DEFOREST_CAUSES,
@@ -81,6 +82,9 @@ export function buildCountrySelect(countries, onChange) {
 
 export function showDetail(plant, nearestDriver = null) {
   const fuelColor = normalizeFuel(plant.fuel);
+  const fossil = isFossil(plant.fuel);
+  const energyTypeLabel = fossil ? "Fossil" : "Clean";
+  const energyTypeColor = fossil ? "#e74c3c" : "#27ae60";
   const deforestRow = `<div class="detail-row">
       <span class="detail-key">Nearby deforest.</span>
       <span class="detail-val${nearestDriver ? "" : " detail-empty"}">
@@ -103,6 +107,10 @@ export function showDetail(plant, nearestDriver = null) {
       </span>
     </div>
     <div class="detail-row">
+      <span class="detail-key">Energy type</span>
+      <span class="detail-val" style="color:${energyTypeColor};font-weight:600">${energyTypeLabel}</span>
+    </div>
+    <div class="detail-row">
       <span class="detail-key">Capacity</span>
       <span class="detail-val">${plant.capacity > 0 ? plant.capacity.toLocaleString() + " MW" : "N/A"}</span>
     </div>
@@ -122,6 +130,10 @@ export function clearDetail() {
     </div>
     <div class="detail-row">
       <span class="detail-key">Fuel</span>
+      <span class="detail-val detail-empty">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-key">Energy type</span>
       <span class="detail-val detail-empty">—</span>
     </div>
     <div class="detail-row">
