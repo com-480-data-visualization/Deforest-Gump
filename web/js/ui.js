@@ -5,6 +5,7 @@ import {
   escapeHtml,
   DEFOREST_COLORS,
   DEFOREST_CAUSES,
+  OTHER_FUEL_EXAMPLES,
 } from "./constants.js";
 
 /* ── Toolbar height → CSS variable (keeps map sticky offset correct) ──────── */
@@ -49,7 +50,7 @@ export function buildFuelChips(onChange) {
     chip.innerHTML = `
       <input type="checkbox" value="${fuel}" checked>
       <span class="chip-dot" style="background:${FUEL_COLORS[fuel]}"></span>
-      ${fuel}`;
+      ${fuel}${fuel === "Other" ? ` <span class="chip-info" title="Includes: ${OTHER_FUEL_EXAMPLES}">ⓘ</span>` : ""}`;
     chip.querySelector("input").addEventListener("change", (e) => {
       chip.classList.toggle("checked", e.target.checked);
       onChange();

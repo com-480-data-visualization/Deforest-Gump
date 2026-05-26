@@ -69,7 +69,8 @@ Promise.all([
     const countries = new Set(data.map((d) => d.country).filter(Boolean));
     const countryToIso3 = new Map(data.filter((d) => d.country && d.iso3).map((d) => [d.country, d.iso3]));
     buildCountrySelect(countries, onFilterChange);
-    buildFuelChips(onFilterChange);
+    let pieChart;
+    buildFuelChips(() => { if (pieChart) pieChart.resetSelection(); onFilterChange(); });
     buildDriverChips(() => { refreshDeforestSidebar(); refreshDeforestDist(); refreshCharts(); });
     buildPopSlider();
 
@@ -99,7 +100,14 @@ Promise.all([
     });
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
-    const pieChart = new CapacityTreemap("plot-3", data);
+    pieChart = new CapacityTreemap("plot-3", data, (fuel) => {
+      document.querySelectorAll("#fuel-chips input").forEach((inp) => {
+        const checked = fuel === null || inp.value === fuel;
+        inp.checked = checked;
+        inp.closest(".fuel-chip").classList.toggle("checked", checked);
+      });
+      onFilterChange();
+    });
     const deforestDistChart = new DeforestHistogram("plot-5");
     const plantDistChart = new CountHistogram("plot-6", data);
     const fossilGauge = new FossilGauge("plot-7");

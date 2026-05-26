@@ -330,6 +330,12 @@ header.masthead {
 .chip.on .chip-dot {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
 }
+.chip-info {
+  font-size: 0.65em;
+  opacity: 0.7;
+  cursor: help;
+  margin-left: 1px;
+}
 
 /* Country select — borderless, underline */
 .select-wrap {

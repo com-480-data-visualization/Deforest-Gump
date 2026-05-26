@@ -146,6 +146,7 @@ export class CorrelationScatter {
     this.rS.domain([0, d3.max(newData, (d) => d.plant_count) || 1]);
 
     const t = d3.transition().duration(400).ease(d3.easeCubicOut);
+    const sel = this._selectedCountry;
     const dots = this.g.selectAll("circle.dot").data(newData, (d) => d.iso3);
 
     const entering = dots.enter().append("circle").attr("class", "dot")
@@ -154,17 +155,30 @@ export class CorrelationScatter {
 
     dots.exit().remove();
 
-    dots.transition(t)
+    const allDots = entering.merge(dots);
+
+    // Set position/color synchronously — never depends on a transition completing,
+    // so filter changes always land at the exact right coordinates immediately.
+    allDots
       .attr("cx", (d) => this.xS(d.deforest_count))
       .attr("cy", (d) => this.yS(d.fossil_pct))
-      .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)]);
+      .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)])
+      .attr("stroke", (d) => sel !== "ALL" && d.country === sel ? "#1c2e1c" : "#fff")
+      .attr("stroke-width", (d) => sel !== "ALL" && d.country === sel ? 1.5 : 0.6);
 
-    this._applyDotStyles();
+    // Animate only size and opacity so entering dots fade in smoothly.
+    allDots.transition(t)
+      .attr("fill-opacity", (d) => sel !== "ALL" && d.country !== sel ? 0.12 : 0.75)
+      .attr("r", (d) => {
+        const base = this.rS(d.plant_count);
+        return sel !== "ALL" && d.country === sel ? base * 1.5 : base;
+      });
   }
 
   _applyDotStyles() {
     const sel = this._selectedCountry;
-    this.g.selectAll("circle.dot").transition().duration(200)
+    // Named transition avoids cancelling any in-flight update transition.
+    this.g.selectAll("circle.dot").transition("style").duration(200)
       .attr("fill-opacity", (d) => sel !== "ALL" && d.country !== sel ? 0.12 : 0.75)
       .attr("r", (d) => {
         const base = this.rS(d.plant_count);
@@ -531,13 +545,19 @@ export class DeforestHistogram {
 /* ── CapacityTreemap ──────────────────────────────────────────────────────── */
 
 export class CapacityTreemap {
-  constructor(id, data) {
+  constructor(id, data, onFuelFilter) {
     this.data = data;
+    this._onFuelFilter = onFuelFilter || null;
+    this._selectedFuel = null;
     this.svg = d3.select("#" + id);
     const vb = this.svg.node().viewBox.baseVal;
     this.W = vb.width;
     this.H = vb.height;
     this.layout = d3.treemap().size([this.W, this.H]).padding(2).round(true);
+  }
+
+  resetSelection() {
+    this._selectedFuel = null;
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
@@ -582,6 +602,8 @@ export class CapacityTreemap {
       .select("rect")
       .attr("fill", (d) => FUEL_COLORS[d.data.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.data.fuel) ? 0.85 : 0.2))
+      .attr("stroke", (d) => d.data.fuel === this._selectedFuel ? "#fff" : "none")
+      .attr("stroke-width", 2)
       .style("cursor", (d) => (d.value > 0 ? "pointer" : "default"))
       .on("mouseover", function (d) {
         if (d.value === 0) return;
@@ -592,6 +614,12 @@ export class CapacityTreemap {
       .on("mouseout", function (d) {
         d3.select(this).attr("opacity", activeFuels.includes(d.data.fuel) ? 0.85 : 0.2);
         hoverEl.textContent = "Hover a cell";
+      })
+      .on("click", (d) => {
+        if (d.value === 0 || !this._onFuelFilter) return;
+        const newFuel = this._selectedFuel === d.data.fuel ? null : d.data.fuel;
+        this._selectedFuel = newFuel;
+        this._onFuelFilter(newFuel);
       });
 
     merged
@@ -705,27 +733,6 @@ export class RegionalCompass {
       c.total += p.capacity || 0;
       if (COMPASS_FOSSIL.has(p.fuel)) c.fossil += p.capacity || 0;
     });
-    const deforestByCode = new Map(correlationData.map((d) => [d.code, d.deforest_count]));
-    const bgData = [];
-    byIso3.forEach((c, iso3) => {
-      const deforest = deforestByCode.get(iso3) || 0;
-      if (deforest < 10) return;
-      bgData.push({
-        fossil_pct: c.total > 0 ? (c.fossil / c.total) * 100 : 0,
-        deforest_count: deforest,
-      });
-    });
-
-    // Background country dots
-    this.g.selectAll("circle.bg-dot").data(bgData).enter()
-      .append("circle").attr("class", "bg-dot")
-      .attr("cx", (d) => this.xS(d.fossil_pct))
-      .attr("cy", (d) => this.yS(d.deforest_count))
-      .attr("r", 2)
-      .attr("fill", "var(--ink-4)")
-      .attr("opacity", 0.4)
-      .style("pointer-events", "none");
-
     // Viewport dot (starts at center)
     this._dot = this.g.append("circle")
       .attr("r", 6)
@@ -847,14 +854,16 @@ export class TopDeforestCountries {
       return;
     }
 
-    // Top 5 by count
+    // Top 5 by count — rank stored in datum so position callbacks use d.rank,
+    // not the selection index i (which reflects DOM order, not sorted rank).
     const top5 = [...deforestByIso3.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([iso3, count]) => ({
+      .map(([iso3, count], rank) => ({
         iso3,
         name: (this._iso3ToCountry.get(iso3) || iso3).slice(0, 16),
         count,
+        rank,
       }));
 
     const maxCount = top5[0].count;
@@ -865,11 +874,11 @@ export class TopDeforestCountries {
     const bars = this.g.selectAll("rect.top-bar").data(top5, (d) => d.iso3);
     bars.enter().append("rect").attr("class", "top-bar")
       .attr("rx", 3).attr("ry", 3)
-      .attr("y", (d, i) => this.yS(i)).attr("height", this.yS.bandwidth())
+      .attr("y", (d) => this.yS(d.rank)).attr("height", this.yS.bandwidth())
       .attr("width", 0).attr("fill", "var(--forest)").attr("opacity", 0.75);
 
     this.g.selectAll("rect.top-bar").transition(t)
-      .attr("y", (d, i) => this.yS(i))
+      .attr("y", (d) => this.yS(d.rank))
       .attr("height", this.yS.bandwidth())
       .attr("width", (d) => this.xS(d.count))
       .attr("fill", "var(--forest)");
@@ -881,7 +890,7 @@ export class TopDeforestCountries {
     names.enter().append("text").attr("class", "tick top-name")
       .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle");
     this.g.selectAll("text.top-name").transition(t)
-      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .attr("y", (d) => this.yS(d.rank) + this.yS.bandwidth() / 2)
       .text((d) => d.name);
     names.exit().remove();
 
@@ -891,7 +900,7 @@ export class TopDeforestCountries {
       .attr("x", 0).attr("dominant-baseline", "middle");
     this.g.selectAll("text.top-val").transition(t)
       .attr("x", (d) => this.xS(d.count) + 3)
-      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .attr("y", (d) => this.yS(d.rank) + this.yS.bandwidth() / 2)
       .text((d) => d3.format(",")(d.count));
     labels.exit().remove();
   }
@@ -971,7 +980,7 @@ export class FossilGauge {
       .attr("text-anchor", "start").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("100%");
 
     // Needle group
-    this._needleG = g.append("g").attr("transform", `translate(${cx},${cy}) rotate(-90)`);
+    this._needleG = g.append("g").attr("transform", `translate(${cx},${cy}) rotate(0)`);
     this._needleG.append("line")
       .attr("x1", 0).attr("y1", 0)
       .attr("x2", -(R - 6)).attr("y2", 0)
@@ -997,8 +1006,8 @@ export class FossilGauge {
     const pct = total > 0 ? fossil / total : 0;
     this._fossilPct = pct;
 
-    // Needle: -90deg = 0%, +90deg = 100%
-    const angle = -90 + pct * 180;
+    // Needle: 0deg = 0% (left/9 o'clock), 180deg = 100% (right/3 o'clock)
+    const angle = pct * 180;
     this._needleG.transition().duration(T).ease(d3.easeCubicOut)
       .attr("transform", `translate(${this._cx},${this._cy}) rotate(${angle})`);
     this._label.text(total > 0 ? (pct * 100).toFixed(1) + "%" : "—");
