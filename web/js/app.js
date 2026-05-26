@@ -217,6 +217,18 @@ Promise.all([
     }
 
     let conclusionScatterSeeded = false;
+
+    // Deforestation data may have finished loading before Promise.all resolved
+    // (deforest GeoJSON is 3.5MB vs plant CSV at 7.5MB), so the deforest-toggled
+    // event fired before the listener below was registered. Seed eagerly here.
+    if (isDeforestVisible()) {
+      const defData = getDefinitiveDeforestPctByCountry();
+      if (defData) {
+        conclusionScatter.update(defData);
+        conclusionScatterSeeded = true;
+      }
+    }
+
     document.addEventListener("deforest-toggled", (e) => {
       updateSidePanelVisibility();
       if (e.detail.active) {
