@@ -28,6 +28,11 @@ import {
   CapacityTreemap,
   CorrelationScatter,
   DeforestHistogram,
+  TopDeforestCountries,
+  FuelDeforestProfile,
+  FossilGauge,
+  RegionalCompass,
+  FuelCountryOverlap,
 } from "./charts.js";
 
 const map = L.map("map", { zoomControl: true, minZoom: 2 }).setView([20, 0], 2);
@@ -97,6 +102,12 @@ Promise.all([
     const pieChart = new CapacityTreemap("plot-3", data);
     const deforestDistChart = new DeforestHistogram("plot-5");
     const plantDistChart = new CountHistogram("plot-6", data);
+    const fossilGauge = new FossilGauge("plot-7");
+    const fuelDeforestChart = new FuelDeforestProfile("plot-9", data);
+    const iso3ToCountry = new Map(data.filter((d) => d.iso3 && d.country).map((d) => [d.iso3, d.country]));
+    const topDeforestChart = new TopDeforestCountries("plot-8", iso3ToCountry);
+    const regionCompass = new RegionalCompass("plot-10", data, correlationData);
+    const fuelOverlapChart = new FuelCountryOverlap("plot-11", data);
 
     const scatter = new CorrelationScatter(
       "plot-4",
@@ -148,7 +159,13 @@ Promise.all([
         (country === "ALL" || d.country === country) &&
         fuels.includes(normalizeFuel(d.fuel))
       );
-      scatter.update(visiblePlants, getDeforestStatsByCountry(s, n, w, e));
+      const deforestByIso3 = getDeforestStatsByCountry(s, n, w, e);
+      scatter.update(visiblePlants, deforestByIso3);
+      fossilGauge.update(visiblePlants);
+      fuelDeforestChart.update(s, n, w, e, fuels, country, deforestByIso3);
+      topDeforestChart.update(deforestByIso3);
+      regionCompass.update(visiblePlants, deforestByIso3);
+      fuelOverlapChart.update(s, n, w, e, fuels, country, deforestByIso3);
     }
 
     function getActiveDrivers() {

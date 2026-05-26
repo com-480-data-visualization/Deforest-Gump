@@ -615,3 +615,436 @@ export class CapacityTreemap {
     cells.exit().remove();
   }
 }
+
+/* ── RegionalCompass ──────────────────────────────────────────────────────── */
+
+const COMPASS_FOSSIL = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
+
+export class RegionalCompass {
+  constructor(id, allData, correlationData) {
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 10, right: 14, bottom: 32, left: 40 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+
+    this.g = this.svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
+
+    this.xS = d3.scaleLinear().domain([0, 100]).range([0, this.W]);
+    this.yS = d3.scaleLog().domain([10, 200000]).range([this.H, 0]).clamp(true);
+
+    // Quadrant background rectangles
+    const midX = this.xS(50);
+    const midY = this.H / 2;
+    const quads = [
+      { x: 0,    y: 0,    w: midX,         h: midY,         fill: "rgba(0,160,80,0.06)" },  // low fossil, high deforest
+      { x: midX, y: 0,    w: this.W - midX, h: midY,         fill: "rgba(200,60,0,0.06)" },  // high fossil, high deforest
+      { x: 0,    y: midY, w: midX,         h: this.H - midY, fill: "rgba(0,180,100,0.04)" }, // low fossil, low deforest
+      { x: midX, y: midY, w: this.W - midX, h: this.H - midY, fill: "rgba(200,160,0,0.05)" }, // high fossil, low deforest
+    ];
+    quads.forEach((q) => {
+      this.g.append("rect")
+        .attr("x", q.x).attr("y", q.y).attr("width", q.w).attr("height", q.h)
+        .attr("fill", q.fill);
+    });
+
+    // Quadrant labels
+    const qlabels = [
+      { x: 4,           y: 9,  text: "agri pressure" },
+      { x: this.W - 4,  y: 9,  text: "double pressure", anchor: "end" },
+      { x: 4,           y: this.H - 4, text: "clean" },
+      { x: this.W - 4,  y: this.H - 4, text: "industrial", anchor: "end" },
+    ];
+    qlabels.forEach((q) => {
+      this.g.append("text")
+        .attr("x", q.x).attr("y", q.y)
+        .attr("font-size", "7px").attr("fill", "var(--ink-4)")
+        .attr("text-anchor", q.anchor || "start")
+        .style("font-style", "italic")
+        .text(q.text);
+    });
+
+    // Grid lines: x at 50, y at log ticks
+    this.g.append("line")
+      .attr("x1", midX).attr("x2", midX).attr("y1", 0).attr("y2", this.H)
+      .attr("stroke", "var(--rule)").attr("stroke-width", 0.5);
+    this.g.append("line")
+      .attr("x1", 0).attr("x2", this.W).attr("y1", midY).attr("y2", midY)
+      .attr("stroke", "var(--rule)").attr("stroke-width", 0.5);
+
+    // X ticks
+    [0, 25, 50, 75, 100].forEach((v) => {
+      this.g.append("text").attr("class", "tick")
+        .attr("x", this.xS(v)).attr("y", this.H + 10)
+        .attr("text-anchor", "middle").text(v + "%");
+    });
+
+    // Y ticks
+    [100, 1000, 10000, 100000].forEach((v) => {
+      this.g.append("text").attr("class", "tick")
+        .attr("x", -4).attr("y", this.yS(v))
+        .attr("text-anchor", "end").attr("dominant-baseline", "middle")
+        .text(d3.format("~s")(v));
+    });
+
+    // Axis labels
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("x", m.left + this.W / 2).attr("y", m.top + this.H + 28)
+      .attr("text-anchor", "middle").text("Fossil capacity %");
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -(m.top + this.H / 2)).attr("y", 11)
+      .attr("text-anchor", "middle").text("Deforest. (log)");
+
+    // Compute per-iso3 fossil_pct from allData
+    const byIso3 = new Map();
+    allData.forEach((p) => {
+      if (!p.iso3) return;
+      if (!byIso3.has(p.iso3)) byIso3.set(p.iso3, { total: 0, fossil: 0 });
+      const c = byIso3.get(p.iso3);
+      c.total += p.capacity || 0;
+      if (COMPASS_FOSSIL.has(p.fuel)) c.fossil += p.capacity || 0;
+    });
+    const deforestByCode = new Map(correlationData.map((d) => [d.code, d.deforest_count]));
+    const bgData = [];
+    byIso3.forEach((c, iso3) => {
+      const deforest = deforestByCode.get(iso3) || 0;
+      if (deforest < 10) return;
+      bgData.push({
+        fossil_pct: c.total > 0 ? (c.fossil / c.total) * 100 : 0,
+        deforest_count: deforest,
+      });
+    });
+
+    // Background country dots
+    this.g.selectAll("circle.bg-dot").data(bgData).enter()
+      .append("circle").attr("class", "bg-dot")
+      .attr("cx", (d) => this.xS(d.fossil_pct))
+      .attr("cy", (d) => this.yS(d.deforest_count))
+      .attr("r", 2)
+      .attr("fill", "var(--ink-4)")
+      .attr("opacity", 0.4)
+      .style("pointer-events", "none");
+
+    // Viewport dot (starts at center)
+    this._dot = this.g.append("circle")
+      .attr("r", 6)
+      .attr("cx", this.xS(50))
+      .attr("cy", this.H / 2)
+      .attr("fill", "var(--forest)")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 2)
+      .attr("opacity", 0);
+
+    this._noDataLabel = this.g.append("text")
+      .attr("x", this.W / 2).attr("y", this.H / 2)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+      .style("font-style", "italic")
+      .attr("visibility", "hidden")
+      .text("Enable deforestation overlay");
+  }
+
+  update(visiblePlants, deforestByIso3) {
+    let totalCap = 0, fossilCap = 0;
+    visiblePlants.forEach((p) => {
+      const cap = p.capacity || 0;
+      totalCap += cap;
+      if (COMPASS_FOSSIL.has(p.fuel)) fossilCap += cap;
+    });
+    const fossilPct = totalCap > 0 ? (fossilCap / totalCap) * 100 : 0;
+
+    let totalDeforest = 0;
+    if (deforestByIso3) {
+      deforestByIso3.forEach((v) => { totalDeforest += v; });
+    }
+
+    const hasData = deforestByIso3 && totalDeforest > 0;
+    this._noDataLabel.attr("visibility", hasData ? "hidden" : "visible");
+    this._dot.transition().duration(400).ease(d3.easeCubicOut)
+      .attr("opacity", hasData ? 0.9 : 0)
+      .attr("cx", this.xS(fossilPct))
+      .attr("cy", hasData ? this.yS(Math.max(10, totalDeforest)) : this.H / 2);
+  }
+}
+
+/* ── FuelDeforestProfile ──────────────────────────────────────────────────── */
+
+export class FuelDeforestProfile extends BarChart {
+  constructor(id, data) {
+    super(id, data, { leftMargin: 42, yLabel: "Avg deforest. px" });
+
+    this.placeholder = this.g.append("text")
+      .attr("x", this.W / 2).attr("y", this.H / 2)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+      .style("font-style", "italic")
+      .text("Enable deforestation overlay");
+  }
+
+  update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry, deforestByIso3) {
+    const hasDeforest = deforestByIso3 && deforestByIso3.size > 0;
+    this.placeholder.attr("visibility", hasDeforest ? "hidden" : "visible");
+
+    if (!hasDeforest) {
+      const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+      this.g.selectAll("rect.bar").transition(t).attr("y", this.H).attr("height", 0);
+      return;
+    }
+
+    const avgByFuel = {};
+    FUELS.forEach((f) => {
+      const plantsForFuel = this._filterData(minLat, maxLat, minLng, maxLng, [f], activeCountry);
+      const iso3Set = new Set(plantsForFuel.filter((d) => d.iso3).map((d) => d.iso3));
+      if (iso3Set.size === 0) { avgByFuel[f] = 0; return; }
+      let total = 0;
+      iso3Set.forEach((iso3) => { total += deforestByIso3.get(iso3) || 0; });
+      avgByFuel[f] = total / iso3Set.size;
+    });
+
+    const mx = Math.max(...Object.values(avgByFuel), 1);
+    this.yS.domain([0, mx]);
+    this._updateYGrid();
+
+    const barData = FUELS.map((f) => ({ fuel: f, val: avgByFuel[f] }));
+    this._updateBars(barData, activeFuels, (v) => d3.format(",d")(v) + " px");
+  }
+}
+
+/* ── TopDeforestCountries ─────────────────────────────────────────────────── */
+
+export class TopDeforestCountries {
+  constructor(id, iso3ToCountry) {
+    // iso3ToCountry: Map<iso3, countryName>
+    this._iso3ToCountry = iso3ToCountry;
+
+    this.svg = d3.select("#" + id);
+    const vb = this.svg.node().viewBox.baseVal;
+    const m = { top: 6, right: 50, bottom: 6, left: 90 };
+    this.W = vb.width - m.left - m.right;
+    this.H = vb.height - m.top - m.bottom;
+
+    this.g = this.svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
+
+    this.xS = d3.scaleLinear().domain([0, 1]).range([0, this.W]);
+    this.yS = d3.scaleBand().domain([0,1,2,3,4]).range([0, this.H]).padding(0.25);
+
+    this.placeholder = this.g.append("text")
+      .attr("x", this.W / 2).attr("y", this.H / 2)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+      .style("font-style", "italic")
+      .text("Enable deforestation overlay");
+  }
+
+  update(deforestByIso3) {
+    const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+    const hasData = deforestByIso3 && deforestByIso3.size > 0;
+    this.placeholder.attr("visibility", hasData ? "hidden" : "visible");
+
+    if (!hasData) {
+      this.g.selectAll("rect.top-bar").transition(t).attr("width", 0);
+      return;
+    }
+
+    // Top 5 by count
+    const top5 = [...deforestByIso3.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([iso3, count]) => ({
+        iso3,
+        name: (this._iso3ToCountry.get(iso3) || iso3).slice(0, 16),
+        count,
+      }));
+
+    const maxCount = top5[0].count;
+    this.xS.domain([0, maxCount]);
+    this.yS.domain(top5.map((_, i) => i));
+
+    // Bars
+    const bars = this.g.selectAll("rect.top-bar").data(top5, (d) => d.iso3);
+    bars.enter().append("rect").attr("class", "top-bar")
+      .attr("rx", 3).attr("ry", 3)
+      .attr("y", (d, i) => this.yS(i)).attr("height", this.yS.bandwidth())
+      .attr("width", 0).attr("fill", "var(--forest)").attr("opacity", 0.75);
+
+    this.g.selectAll("rect.top-bar").transition(t)
+      .attr("y", (d, i) => this.yS(i))
+      .attr("height", this.yS.bandwidth())
+      .attr("width", (d) => this.xS(d.count))
+      .attr("fill", "var(--forest)");
+
+    bars.exit().transition(t).attr("width", 0).remove();
+
+    // Country name labels (left of bar)
+    const names = this.g.selectAll("text.top-name").data(top5, (d) => d.iso3);
+    names.enter().append("text").attr("class", "tick top-name")
+      .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle");
+    this.g.selectAll("text.top-name").transition(t)
+      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .text((d) => d.name);
+    names.exit().remove();
+
+    // Count labels (right of bar)
+    const labels = this.g.selectAll("text.top-val").data(top5, (d) => d.iso3);
+    labels.enter().append("text").attr("class", "tick top-val")
+      .attr("x", 0).attr("dominant-baseline", "middle");
+    this.g.selectAll("text.top-val").transition(t)
+      .attr("x", (d) => this.xS(d.count) + 3)
+      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .text((d) => d3.format(",")(d.count));
+    labels.exit().remove();
+  }
+}
+
+/* ── FossilGauge ──────────────────────────────────────────────────────────── */
+
+const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
+
+export class FossilGauge {
+  constructor(id) {
+    const svg = d3.select("#" + id);
+    const vb = svg.node().viewBox.baseVal;
+    const cx = vb.width / 2;
+    const cy = vb.height - 18;
+    const R = Math.min(cx, cy) - 10;
+
+    this._cx = cx;
+    this._cy = cy;
+    this._R = R;
+    this._needleG = null;
+    this._label = null;
+    this._fossilPct = 0;
+
+    const g = svg.append("g");
+
+    // Gradient arc: green → orange → red
+    const arcColors = [
+      { offset: "0%", color: "#4caf50" },
+      { offset: "50%", color: "#ff9800" },
+      { offset: "100%", color: "#f44336" },
+    ];
+    const defs = svg.append("defs");
+    const gradId = "fossil-grad-" + id;
+    const grad = defs.append("linearGradient").attr("id", gradId)
+      .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
+    arcColors.forEach((c) => grad.append("stop").attr("offset", c.offset).attr("stop-color", c.color));
+
+    // Arc generator for the gauge track
+    const arc = d3.arc()
+      .innerRadius(R - 14)
+      .outerRadius(R)
+      .startAngle(-Math.PI / 2)
+      .endAngle(Math.PI / 2);
+
+    g.append("path")
+      .attr("d", arc())
+      .attr("transform", `translate(${cx},${cy})`)
+      .attr("fill", `url(#${gradId})`)
+      .attr("opacity", 0.85);
+
+    // Global avg tick at 50% (π/2 - π*0.5 = 0 rad from top = right of half arc)
+    // The half-arc goes from -90° (left, 0%) to +90° (right, 100%)
+    // 50% position: angle = 0 (straight up from center, so bottom of half-arc)
+    // Let's mark 50% position:
+    const avgAngle = 0; // 50% = middle of arc = pointing straight down
+    const tickR = R + 4;
+    const tx = cx + tickR * Math.sin(avgAngle);
+    const ty = cy - tickR * Math.cos(avgAngle);
+    g.append("line")
+      .attr("x1", cx + (R - 14) * Math.sin(avgAngle))
+      .attr("y1", cy - (R - 14) * Math.cos(avgAngle))
+      .attr("x2", cx + R * Math.sin(avgAngle))
+      .attr("y2", cy - R * Math.cos(avgAngle))
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1.5);
+
+    g.append("text")
+      .attr("x", tx).attr("y", ty - 3)
+      .attr("text-anchor", "middle").attr("font-size", "7px")
+      .attr("fill", "var(--ink-3)").text("avg");
+
+    // Axis labels
+    g.append("text").attr("x", cx - R - 2).attr("y", cy + 2)
+      .attr("text-anchor", "end").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("0%");
+    g.append("text").attr("x", cx + R + 2).attr("y", cy + 2)
+      .attr("text-anchor", "start").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("100%");
+
+    // Needle group
+    this._needleG = g.append("g").attr("transform", `translate(${cx},${cy}) rotate(-90)`);
+    this._needleG.append("line")
+      .attr("x1", 0).attr("y1", 0)
+      .attr("x2", -(R - 6)).attr("y2", 0)
+      .attr("stroke", "var(--ink)").attr("stroke-width", 2)
+      .attr("stroke-linecap", "round");
+    this._needleG.append("circle").attr("r", 4).attr("fill", "var(--ink)");
+
+    // Value label
+    this._label = g.append("text")
+      .attr("x", cx).attr("y", cy - 12)
+      .attr("text-anchor", "middle").attr("font-size", "14px")
+      .attr("font-weight", "600").attr("fill", "var(--ink)")
+      .text("—");
+  }
+
+  update(visiblePlants) {
+    let total = 0, fossil = 0;
+    visiblePlants.forEach((p) => {
+      const cap = p.capacity || 0;
+      total += cap;
+      if (FOSSIL_FUELS.has(p.fuel)) fossil += cap;
+    });
+    const pct = total > 0 ? fossil / total : 0;
+    this._fossilPct = pct;
+
+    // Needle: -90deg = 0%, +90deg = 100%
+    const angle = -90 + pct * 180;
+    this._needleG.transition().duration(T).ease(d3.easeCubicOut)
+      .attr("transform", `translate(${this._cx},${this._cy}) rotate(${angle})`);
+    this._label.text(total > 0 ? (pct * 100).toFixed(1) + "%" : "—");
+  }
+}
+
+/* ── FuelCountryOverlap ───────────────────────────────────────────────────── */
+
+export class FuelCountryOverlap extends BarChart {
+  constructor(id, data) {
+    super(id, data, { leftMargin: 30, yLabel: "% countries" });
+    this.yS.domain([0, 100]);
+    this._updateYGrid();
+
+    this.placeholder = this.g.append("text")
+      .attr("x", this.W / 2).attr("y", this.H / 2)
+      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+      .style("font-style", "italic")
+      .text("Enable deforestation overlay");
+  }
+
+  update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry, deforestByIso3) {
+    const hasDeforest = deforestByIso3 && deforestByIso3.size > 0;
+    this.placeholder.attr("visibility", hasDeforest ? "hidden" : "visible");
+
+    if (!hasDeforest) {
+      const t = d3.transition().duration(T).ease(d3.easeCubicOut);
+      this.g.selectAll("rect.bar").transition(t).attr("y", this.H).attr("height", 0);
+      return;
+    }
+
+    const pctByFuel = {};
+    FUELS.forEach((f) => {
+      const plantsForFuel = this._filterData(minLat, maxLat, minLng, maxLng, [f], activeCountry);
+      const iso3Set = new Set(plantsForFuel.filter((d) => d.iso3).map((d) => d.iso3));
+      if (iso3Set.size === 0) { pctByFuel[f] = 0; return; }
+      let overlap = 0;
+      iso3Set.forEach((iso3) => { if ((deforestByIso3.get(iso3) || 0) > 0) overlap++; });
+      pctByFuel[f] = (overlap / iso3Set.size) * 100;
+    });
+
+    this.yS.domain([0, 100]);
+    this._updateYGrid();
+
+    const barData = FUELS.map((f) => ({ fuel: f, val: pctByFuel[f] }));
+    this._updateBars(barData, activeFuels, (v) => v.toFixed(0) + "%");
+  }
+}

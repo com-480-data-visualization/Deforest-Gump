@@ -277,7 +277,7 @@
           <div class="panel-card card hidden" id="deforest-stats">
             <div class="card-head">
               <h3 class="card-title">Deforestation in view</h3>
-              <span class="card-meta">Current view</span>
+              <span class="card-meta">Count</span>
             </div>
             <div id="deforest-stats-rows"></div>
           </div>
@@ -286,7 +286,7 @@
           <div class="panel-card card" id="plant-stats">
             <div class="card-head">
               <h3 class="card-title">Plants in view</h3>
-              <span class="card-meta">By fuel type</span>
+              <span class="card-meta">Count</span>
             </div>
             <div id="plant-stats-rows"></div>
           </div>
@@ -294,8 +294,11 @@
           <!-- Total capacity mix -->
           <div class="panel-card card chart-card">
             <div class="card-head">
-              <h3 class="card-title">Total capacity mix</h3>
-              <span class="card-meta" id="total-mw">—</span>
+              <h3 class="card-title">Total Capacity in view</h3>
+              <span class="card-meta"
+                >Total:
+                <span id="total-mw">—</span>
+              </span>
             </div>
             <svg
               id="plot-3"
@@ -308,7 +311,7 @@
           <!-- Fossil share vs. forest loss -->
           <div class="panel-card card chart-card">
             <div class="card-head">
-              <h3 class="card-title">Fossil share vs. forest loss</h3>
+              <h3 class="card-title">Fossil share vs. forest loss in view</h3>
               <span class="card-meta">Click a dot to filter</span>
             </div>
             <svg
@@ -319,6 +322,49 @@
             <div class="chart-hint chart-foot">
               Dot size = plant count · color = dominant fuel
             </div>
+          </div>
+
+          <!-- Fossil fuel gauge -->
+          <div class="panel-card card chart-card">
+            <div class="card-head">
+              <h3 class="card-title">Fossil capacity share</h3>
+              <span class="card-meta">Current view</span>
+            </div>
+            <svg
+              id="plot-7"
+              viewBox="0 0 260 110"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+            <div class="chart-hint chart-foot">
+              Coal · Gas · Oil · Petcoke share of total MW
+            </div>
+          </div>
+
+          <!-- Top deforested countries -->
+          <div class="panel-card card chart-card">
+            <div class="card-head">
+              <h3 class="card-title">Top deforested countries</h3>
+              <span class="card-meta">In current view</span>
+            </div>
+            <svg
+              id="plot-8"
+              viewBox="0 0 260 130"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+          </div>
+
+          <!-- Regional compass -->
+          <div class="panel-card card chart-card">
+            <div class="card-head">
+              <h3 class="card-title">Where is this view?</h3>
+              <span class="card-meta">Fossil % vs. deforestation</span>
+            </div>
+            <svg
+              id="plot-10"
+              viewBox="0 0 260 130"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+            <div class="chart-hint chart-foot">Green dot = current view · grey = all countries</div>
           </div>
 
         </div>
@@ -406,6 +452,36 @@
           ></svg>
         </div>
 
+        <div class="chart-card">
+          <div class="head">
+            <div class="chart-title title">Fuel vs. deforestation</div>
+            <div class="subtitle">
+              Avg deforest. pixels per country · by fuel type
+            </div>
+          </div>
+          <svg
+            id="plot-9"
+            viewBox="0 0 260 140"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+          <div class="chart-hint chart-foot">
+            Higher = fuel found in more deforested countries
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="head">
+            <div class="chart-title title">Fuel–forest co-presence</div>
+            <div class="subtitle">% of countries with fuel AND deforestation · current view</div>
+          </div>
+          <svg
+            id="plot-11"
+            viewBox="0 0 260 140"
+            preserveAspectRatio="xMidYMid meet"
+          ></svg>
+          <div class="chart-hint chart-foot">Higher = fuel more co-present with deforestation</div>
+        </div>
+
         <div class="chart-card" id="pb-card">
           <div class="head">
             <div class="chart-title title">Planetary Boundaries</div>
@@ -425,8 +501,8 @@
               <div class="pb-bar-limit" style="left: 69%"></div>
             </div>
             <div class="pb-note">
-              ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂
-              from fossil fuels
+              ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂ from
+              fossil fuels
             </div>
           </div>
           <div class="pb-item">
@@ -435,7 +511,10 @@
               <span class="pb-badge pb-badge--exceeded">Exceeded</span>
             </div>
             <div class="pb-bar-track">
-              <div class="pb-bar-fill pb-bar-fill--exceeded" style="width: 100%"></div>
+              <div
+                class="pb-bar-fill pb-bar-fill--exceeded"
+                style="width: 100%"
+              ></div>
               <div class="pb-bar-limit" style="left: 25%"></div>
             </div>
             <div class="pb-note">
@@ -444,8 +523,8 @@
             </div>
           </div>
           <p class="pb-footer">
-            Source: Stockholm Resilience Centre, 2023. Each power plant and
-            each deforestation pixel visible on this map is a contributor.
+            Source: Stockholm Resilience Centre, 2023. Each power plant and each
+            deforestation pixel visible on this map is a contributor.
           </p>
         </div>
       </section>

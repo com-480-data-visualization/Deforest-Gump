@@ -560,7 +560,7 @@ main {
   border-radius: var(--radius);
   overflow: hidden;
   position: sticky;
-  top: calc(var(--toolbar-h, 56px) + 8px);
+  top: var(--toolbar-h, 56px);
   align-self: flex-start;
 }
 #map {
