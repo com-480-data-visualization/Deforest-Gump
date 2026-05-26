@@ -7,6 +7,7 @@
 :root {
   /* Surface / paper */
   --bg: #f7f6f1;
+  --paper: #faf8f1;
   --surface: #ffffff;
   --surface-soft: #fbfaf6;
   --rule: #e6e3da;
@@ -84,7 +85,7 @@ select {
 
 /* ── Masthead ──────────────────────────────────────────────────────────── */
 header.masthead {
-  background: var(--surface);
+  background: var(--bg);
   border-bottom: 1px solid var(--rule);
   padding: 18px 28px 16px;
   display: flex;
@@ -1002,7 +1003,7 @@ main {
 
 /* ── Hero section ──────────────────────────────────────────────────────── */
 .hero-section {
-  background: var(--surface);
+  background: var(--bg);
   border-bottom: 2px solid var(--rule);
   min-height: calc(100vh - 64px);
   display: flex;
@@ -1654,7 +1655,7 @@ body {
 /* ── NEWSPAPER MASTHEAD ──────────────────────────────────────────────────── */
 header.masthead,
 .masthead {
-  background: var(--paper);
+  background: var(--bg);
   border-bottom: 1px solid var(--rule);
   padding: 0;
   display: block;
@@ -1743,7 +1744,7 @@ header.masthead,
 
 /* ── HERO ARTICLE ────────────────────────────────────────────────────────── */
 .hero-section {
-  background: var(--paper);
+  background: var(--bg);
   border-bottom: 1px solid var(--ink);
   padding: 0;
 }
