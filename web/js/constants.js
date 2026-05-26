@@ -30,11 +30,12 @@ export const DEFOREST_CAUSES = {
   5: "Urbanization",
 };
 
-export const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil"]);
+// Raw fuel strings considered fossil (Petcoke is normalized to "Other" but still fossil).
+export const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
 
 export const normalizeFuel = (raw) => (FUELS.includes(raw) ? raw : "Other");
 
-export const isFossil = (raw) => FOSSIL_FUELS.has(normalizeFuel(raw));
+export const isFossil = (raw) => FOSSIL_FUELS.has(raw);
 
 export const getRadius = (cap) =>
   !cap || cap <= 0 ? 3 : Math.max(Math.log(cap + 1), 2);

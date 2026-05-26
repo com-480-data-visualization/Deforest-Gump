@@ -1,31 +1,107 @@
-import { DEFOREST_COLORS, DEFOREST_CAUSES } from "./constants.js";
+import { DEFOREST_COLORS } from "./constants.js";
 import { showToast } from "./ui.js";
 
+/* ── Shared canvas overlay base ──────────────────────────────────────────────
+   Creates a positioned canvas inside a custom pane and redraws on map events.
+   Subclasses implement _paint(ctx, map, w, h, nwPt). */
+
+class CanvasOverlayLayer extends L.Layer {
+  constructor(paneName, zIndex, padBounds = 0.2) {
+    super();
+    this._paneName = paneName;
+    this._zIndex = zIndex;
+    this._padBounds = padBounds;
+    this._rafId = null;
+    this._draw = this._draw.bind(this);
+    this._hide = () => { this._canvas.style.display = "none"; };
+    this._scheduleDraw = () => {
+      if (this._rafId) cancelAnimationFrame(this._rafId);
+      this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw(); });
+    };
+  }
+
+  onAdd(map) {
+    this._map = map;
+    if (!map.getPane(this._paneName)) {
+      const pane = map.createPane(this._paneName);
+      pane.style.zIndex = String(this._zIndex);
+      pane.style.pointerEvents = "none";
+    }
+    this._canvas = L.DomUtil.create("canvas", "", map.getPane(this._paneName));
+    map.on("zoomstart", this._hide);
+    map.on("move", this._scheduleDraw);
+    map.on("viewreset moveend zoomend resize", this._draw);
+    this._draw();
+    return this;
+  }
+
+  onRemove(map) {
+    if (this._rafId) cancelAnimationFrame(this._rafId);
+    L.DomUtil.remove(this._canvas);
+    map.off("zoomstart", this._hide);
+    map.off("move", this._scheduleDraw);
+    map.off("viewreset moveend zoomend resize", this._draw);
+    return this;
+  }
+
+  _draw() {
+    const map = this._map;
+    const bounds = map.getBounds().pad(this._padBounds);
+    const nw = map.latLngToLayerPoint(bounds.getNorthWest());
+    const se = map.latLngToLayerPoint(bounds.getSouthEast());
+    const w = Math.max(1, se.x - nw.x);
+    const h = Math.max(1, se.y - nw.y);
+
+    const canvas = this._canvas;
+    canvas.style.display = "";
+    canvas.width = w;
+    canvas.height = h;
+    L.DomUtil.setPosition(canvas, nw);
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, w, h);
+    this._paint(ctx, map, w, h, nw);
+  }
+}
+
+/* Generic GeoJSON loader — returns a Promise<geojson> with toast on failure. */
+function loadGeoJSON(url, failLabel, toggleBtnId) {
+  return fetch(url)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))))
+    .catch((err) => {
+      console.warn(`${failLabel} failed to load:`, err.message);
+      document.getElementById(toggleBtnId)?.classList.remove("active");
+      showToast(`Failed to load ${failLabel.toLowerCase()}.`);
+      throw err;
+    });
+}
+
 /* ── Deforestation Overlay ────────────────────────────────────────────────── */
+
+const CELL_HALF = 0.0482;
+const ALL_DRIVERS = [1, 2, 3, 4, 5];
 
 let deforestMap = null;
 let deforestLayer = null;
 let deforestVisible = false;
-let deforestFeatures = []; // all features — used for stats + nearest lookup
-let deforestGeoJSON = null; // cached raw GeoJSON so re-toggle skips re-fetch
-let deforestActiveDrivers = new Set([1, 2, 3, 4, 5]);
-let deforestCountryIso3 = null; // ISO alpha-3 string or null for no country filter
+let deforestFeatures = []; // all features for current country filter — stats + nearest lookup
+let deforestGeoJSON = null;
+let deforestActiveDrivers = new Set(ALL_DRIVERS);
+let deforestCountryIso3 = null;
 
 export const isDeforestVisible = () => deforestVisible;
 
 export function getDeforestStats(south, north, west, east) {
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  deforestFeatures.forEach((f) => {
+  for (const f of deforestFeatures) {
     const [lon, lat] = f.geometry.coordinates;
-    if (lat < south || lat > north || lon < west || lon > east) return;
+    if (lat < south || lat > north || lon < west || lon > east) continue;
     const d = f.properties.driver;
     if (counts[d] !== undefined) counts[d]++;
-  });
+  }
   return counts;
 }
 
-/* Returns Map<iso3, count> for features inside the viewport, filtered by active
-   drivers. Returns null when deforestation data has not loaded yet. */
 export function getDeforestStatsByCountry(south, north, west, east) {
   if (!deforestFeatures.length) return null;
   const counts = new Map();
@@ -39,7 +115,6 @@ export function getDeforestStatsByCountry(south, north, west, east) {
   return counts;
 }
 
-/* Returns nearest deforestation pixel within radiusDeg degrees, or null. */
 export function getNearestDeforestDriver(lat, lng, radiusDeg = 2) {
   if (!deforestFeatures.length) return null;
   let nearest = null;
@@ -58,11 +133,8 @@ export function getNearestDeforestDriver(lat, lng, radiusDeg = 2) {
 
 let _definitiveDeforestCache = null;
 
-/* Returns Map<iso3, definitiveDeforestPct> for all countries globally.
-   Definitive drivers = 1 (commodity), 2 (shifting), 5 (urbanization).
-   Returns null if deforestation data has not loaded yet.
-   Always uses the full unfiltered dataset so the conclusion chart is
-   independent of country/driver filters. Result is cached after first call. */
+/* Definitive drivers = 1 (commodity), 2 (shifting), 5 (urbanization).
+   Always uses unfiltered dataset so the conclusion chart is independent of filters. */
 export function getDefinitiveDeforestPctByCountry() {
   if (_definitiveDeforestCache) return _definitiveDeforestCache;
   if (!deforestGeoJSON) return null;
@@ -76,89 +148,35 @@ export function getDefinitiveDeforestPctByCountry() {
     const d = f.properties.driver;
     if (d === 1 || d === 2 || d === 5) c.def++;
   }
-  const result = new Map();
-  totals.forEach((c, iso3) => {
-    result.set(iso3, c.total > 0 ? (c.def / c.total) * 100 : 0);
-  });
-  _definitiveDeforestCache = result;
-  return result;
+  _definitiveDeforestCache = new Map(
+    [...totals].map(([iso3, c]) => [iso3, c.total > 0 ? (c.def / c.total) * 100 : 0]),
+  );
+  return _definitiveDeforestCache;
 }
 
-/* Update which drivers are shown on the overlay without re-fetching. */
 export function setDeforestDriverFilter(activeDrivers) {
   deforestActiveDrivers = new Set(activeDrivers);
-  if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
-  if (deforestLayer) deforestMap.removeLayer(deforestLayer);
-  buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
+  rebuildDeforestLayer();
 }
 
-/* Filter deforestation to a specific country. Pass an ISO alpha-3 code (e.g.
-   "BRA") to restrict, or null to show all countries. */
 export function setDeforestCountryFilter(iso3) {
   deforestCountryIso3 = iso3;
+  rebuildDeforestLayer();
+}
+
+function rebuildDeforestLayer() {
   if (!deforestVisible || !deforestGeoJSON || !deforestMap) return;
   if (deforestLayer) deforestMap.removeLayer(deforestLayer);
   buildDeforestLayerFromData(deforestMap, deforestGeoJSON);
 }
 
-const CELL_HALF = 0.0482;
-
-class DeforestCanvasLayer extends L.Layer {
+class DeforestCanvasLayer extends CanvasOverlayLayer {
   constructor(features) {
-    super();
+    super("deforestPane", 360, 0.2);
     this._features = features;
-    this._rafId = null;
-    this._draw = this._draw.bind(this);
-    this._hide = this._hide.bind(this);
-    this._scheduleDraw = () => {
-      if (this._rafId) cancelAnimationFrame(this._rafId);
-      this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw(); });
-    };
   }
 
-  onAdd(map) {
-    this._map = map;
-    if (!map.getPane("deforestPane")) {
-      const pane = map.createPane("deforestPane");
-      pane.style.zIndex = "360";
-      pane.style.pointerEvents = "none";
-    }
-    this._canvas = L.DomUtil.create("canvas", "", map.getPane("deforestPane"));
-    map.on("zoomstart", this._hide);
-    map.on("move", this._scheduleDraw);
-    map.on("viewreset moveend zoomend resize", this._draw);
-    this._draw();
-    return this;
-  }
-
-  onRemove(map) {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-    L.DomUtil.remove(this._canvas);
-    map.off("zoomstart", this._hide);
-    map.off("move", this._scheduleDraw);
-    map.off("viewreset moveend zoomend resize", this._draw);
-    return this;
-  }
-
-  _hide() { this._canvas.style.display = "none"; }
-
-  _draw() {
-    const map = this._map;
-    const bounds = map.getBounds().pad(0.2);
-    const nw = map.latLngToLayerPoint(bounds.getNorthWest());
-    const se = map.latLngToLayerPoint(bounds.getSouthEast());
-    const w = Math.max(1, se.x - nw.x);
-    const h = Math.max(1, se.y - nw.y);
-
-    const canvas = this._canvas;
-    canvas.style.display = "";
-    canvas.width = w;
-    canvas.height = h;
-    L.DomUtil.setPosition(canvas, nw);
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, w, h);
-
+  _paint(ctx, map, w, h, nw) {
     const vb = map.getBounds();
     const s = vb.getSouth() - CELL_HALF;
     const n = vb.getNorth() + CELL_HALF;
@@ -189,7 +207,7 @@ function buildDeforestLayerFromData(map, geojson) {
 
   deforestFeatures = bboxFiltered;
 
-  const visible = deforestActiveDrivers.size === 5
+  const visible = deforestActiveDrivers.size === ALL_DRIVERS.length
     ? bboxFiltered
     : bboxFiltered.filter((f) => deforestActiveDrivers.has(f.properties.driver));
 
@@ -207,69 +225,43 @@ function buildDeforestLayerFromData(map, geojson) {
   );
 }
 
-function loadDeforestLayer(map) {
-  if (deforestGeoJSON) {
-    buildDeforestLayerFromData(map, deforestGeoJSON);
-    return;
-  }
-  fetch("data/8-deforestation.geojson")
-    .then((r) => {
-      if (!r.ok) throw new Error(r.statusText);
-      return r.json();
-    })
-    .then((geojson) => {
-      deforestGeoJSON = geojson;
-      buildDeforestLayerFromData(map, geojson);
-    })
-    .catch((err) => {
-      console.warn("Deforestation layer failed to load:", err.message);
-      deforestVisible = false;
-      document.getElementById("deforest-toggle").classList.remove("active");
-      showToast("Failed to load deforestation layer.");
-    });
-}
-
-/* Fetch deforestation data and populate deforestFeatures for nearest-driver
-   lookups without rendering the visual layer. Safe to call multiple times. */
-export function preloadDeforestData() {
-  if (deforestGeoJSON) return;
-  fetch("data/8-deforestation.geojson")
-    .then((r) => (r.ok ? r.json() : Promise.reject(r.statusText)))
-    .then((geojson) => {
-      deforestGeoJSON = geojson;
-      deforestFeatures = geojson.features;
-    })
-    .catch((err) => console.warn("Deforestation preload failed:", err));
-}
-
 export function buildDeforestToggle(map) {
   deforestMap = map;
   const btn = document.getElementById("deforest-toggle");
   btn.addEventListener("click", () => {
     deforestVisible = !deforestVisible;
     btn.classList.toggle("active", deforestVisible);
-    if (deforestVisible) {
-      loadDeforestLayer(map);
-    } else {
+    if (!deforestVisible) {
       if (deforestLayer) {
         map.removeLayer(deforestLayer);
         deforestLayer = null;
       }
-      document.dispatchEvent(
-        new CustomEvent("deforest-toggled", { detail: { active: false } }),
-      );
+      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: false } }));
+      return;
     }
+    if (deforestGeoJSON) {
+      buildDeforestLayerFromData(map, deforestGeoJSON);
+      return;
+    }
+    loadGeoJSON("data/8-deforestation.geojson", "Deforestation layer", "deforest-toggle")
+      .then((geojson) => {
+        deforestGeoJSON = geojson;
+        buildDeforestLayerFromData(map, geojson);
+      })
+      .catch(() => { deforestVisible = false; });
   });
 }
 
 /* ── Population Overlay ───────────────────────────────────────────────────── */
 
+const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
+
 let populationMap = null;
 let populationLayer = null;
 let populationVisible = false;
-let populationGeoJSON = null; // cached so re-toggle skips re-fetch
-let populationThreshold = 0; // norm value [0,1] — hide points below this
-let populationCountryIso3 = null; // ISO alpha-3 string or null for no filter
+let populationGeoJSON = null;
+let populationThreshold = 0;
+let populationCountryIso3 = null;
 
 export function setPopulationThreshold(t) {
   populationThreshold = t;
@@ -283,72 +275,13 @@ export function setPopulationCountryFilter(iso3) {
   buildPopLayerFromData(populationMap, populationGeoJSON);
 }
 
-const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
-
-function formatPop(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + "k";
-  return String(n);
-}
-
-class PopHeatmapLayer extends L.Layer {
-  constructor(pts, colorScale) {
-    super();
-    this._pts = pts; // [{lat, lng, norm}]
-    this._color = colorScale;
-    this._rafId = null;
-    this._draw = this._draw.bind(this);
-    this._hide = this._hide.bind(this);
-    this._scheduleDraw = () => {
-      if (this._rafId) cancelAnimationFrame(this._rafId);
-      this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw(); });
-    };
+class PopHeatmapLayer extends CanvasOverlayLayer {
+  constructor(pts) {
+    super("populationPane", 350, 0.1);
+    this._pts = pts;
   }
 
-  onAdd(map) {
-    this._map = map;
-    if (!map.getPane("populationPane")) {
-      const pane = map.createPane("populationPane");
-      pane.style.zIndex = "350";
-      pane.style.pointerEvents = "none";
-    }
-    this._canvas = L.DomUtil.create("canvas", "", map.getPane("populationPane"));
-    map.on("zoomstart", this._hide);
-    map.on("move", this._scheduleDraw);
-    map.on("viewreset moveend zoomend resize", this._draw);
-    this._draw();
-    return this;
-  }
-
-  onRemove(map) {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-    L.DomUtil.remove(this._canvas);
-    map.off("zoomstart", this._hide);
-    map.off("move", this._scheduleDraw);
-    map.off("viewreset moveend zoomend resize", this._draw);
-    return this;
-  }
-
-  _hide() {
-    this._canvas.style.display = "none";
-  }
-
-  _draw() {
-    const map = this._map;
-
-    // Size and position the canvas to cover the visible area in layer coords
-    const bounds = map.getBounds().pad(0.1);
-    const nw = map.latLngToLayerPoint(bounds.getNorthWest());
-    const se = map.latLngToLayerPoint(bounds.getSouthEast());
-    const w = Math.max(1, se.x - nw.x);
-    const h = Math.max(1, se.y - nw.y);
-
-    const canvas = this._canvas;
-    canvas.style.display = "";
-    canvas.width = w;
-    canvas.height = h;
-    L.DomUtil.setPosition(canvas, nw); // positions via CSS transform in layer space
-
+  _paint(outCtx, map, w, h, nw) {
     const zoom = map.getZoom();
     const radius = Math.max(15, Math.min(40, zoom * 4));
 
@@ -365,12 +298,9 @@ class PopHeatmapLayer extends L.Layer {
     const MAX = 8000;
     const step = visible.length > MAX ? Math.ceil(visible.length / MAX) : 1;
     const pts = step > 1 ? visible.filter((_, i) => i % step === 0) : visible;
-
-    const outCtx = canvas.getContext("2d");
-    outCtx.clearRect(0, 0, w, h);
     if (pts.length === 0) return;
 
-    // Pass 1 — accumulate intensity blobs using additive alpha blending
+    // Pass 1 — accumulate intensity using additive alpha blending on offscreen canvas
     const off = document.createElement("canvas");
     off.width = w;
     off.height = h;
@@ -378,7 +308,6 @@ class PopHeatmapLayer extends L.Layer {
     ctx.globalCompositeOperation = "lighter";
 
     pts.forEach((p) => {
-      // Draw in layer space offset by nw so (0,0) = canvas top-left
       const lp = map.latLngToLayerPoint([p.lat, p.lng]);
       const x = lp.x - nw.x;
       const y = lp.y - nw.y;
@@ -400,7 +329,7 @@ class PopHeatmapLayer extends L.Layer {
       const alpha = data[i + 3];
       if (alpha === 0) continue;
       const t = Math.min(1, alpha / 255);
-      const c = d3.color(this._color(t));
+      const c = d3.color(popColorScale(t));
       data[i] = c.r;
       data[i + 1] = c.g;
       data[i + 2] = c.b;
@@ -421,30 +350,8 @@ function buildPopLayerFromData(map, geojson) {
     norm: f.properties.norm,
   }));
 
-  populationLayer = new PopHeatmapLayer(pts, popColorScale);
+  populationLayer = new PopHeatmapLayer(pts);
   populationLayer.addTo(map);
-}
-
-function loadPopulationLayer(map) {
-  if (populationGeoJSON) {
-    buildPopLayerFromData(map, populationGeoJSON);
-    return;
-  }
-  fetch("data/5-population.geojson")
-    .then((r) => {
-      if (!r.ok) throw new Error(r.statusText);
-      return r.json();
-    })
-    .then((geojson) => {
-      populationGeoJSON = geojson;
-      buildPopLayerFromData(map, geojson);
-    })
-    .catch((err) => {
-      console.warn("Population layer failed to load:", err.message);
-      populationVisible = false;
-      document.getElementById("population-toggle").classList.remove("active");
-      showToast("Failed to load population layer.");
-    });
 }
 
 export function buildPopulationToggle(map) {
@@ -455,13 +362,22 @@ export function buildPopulationToggle(map) {
     btn.classList.toggle("active", populationVisible);
     document.getElementById("population-tool").classList.toggle("hidden", !populationVisible);
     document.getElementById("population-divider").classList.toggle("hidden", !populationVisible);
-    if (populationVisible) {
-      loadPopulationLayer(map);
-    } else {
+    if (!populationVisible) {
       if (populationLayer) {
         map.removeLayer(populationLayer);
         populationLayer = null;
       }
+      return;
     }
+    if (populationGeoJSON) {
+      buildPopLayerFromData(map, populationGeoJSON);
+      return;
+    }
+    loadGeoJSON("data/5-population.geojson", "Population layer", "population-toggle")
+      .then((geojson) => {
+        populationGeoJSON = geojson;
+        buildPopLayerFromData(map, geojson);
+      })
+      .catch(() => { populationVisible = false; });
   });
 }

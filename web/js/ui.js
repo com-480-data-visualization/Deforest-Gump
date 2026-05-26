@@ -10,41 +10,40 @@ import {
 } from "./constants.js";
 
 /* ── Toolbar height → CSS variable (keeps map sticky offset correct) ──────── */
-
 const toolbar = document.getElementById("controls");
-function syncToolbarHeight() {
+const syncToolbarHeight = () =>
   document.documentElement.style.setProperty("--toolbar-h", toolbar.offsetHeight + "px");
-}
 syncToolbarHeight();
 new ResizeObserver(syncToolbarHeight).observe(toolbar);
 
-/* ── Un-stick toolbar when conclusion section scrolls into view ───────────── */
-const conclusionSection = document.querySelector(".conclusion-section");
-if (conclusionSection) {
-  new IntersectionObserver(
-    ([entry]) => {
-      const pastTop = entry.boundingClientRect.top < 0;
-      toolbar.classList.toggle("toolbar--unfixed", entry.isIntersecting || pastTop);
-    },
-    { threshold: 0 }
-  ).observe(conclusionSection);
-}
+/* Toolbar slides up as the conclusion section scrolls into view. */
+(function () {
+  const conclusion = document.querySelector(".conclusion-section");
+  if (!conclusion) return;
+  let rafId = null;
+  const update = () => {
+    const h = toolbar.offsetHeight;
+    const overlap = Math.min(h, Math.max(0, h - conclusion.getBoundingClientRect().top));
+    toolbar.style.transform = `translateY(${-overlap}px)`;
+    toolbar.style.pointerEvents = overlap >= h ? "none" : "";
+  };
+  window.addEventListener("scroll", () => {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => { rafId = null; update(); });
+  }, { passive: true });
+  update();
+})();
 
-/* ── Deforestation driver tool visibility ─────────────────────────────────── */
-
+/* ── Driver tool visibility tracks the deforest overlay ──────────────────── */
 document.addEventListener("deforest-toggled", (e) => {
-  const active = e.detail.active;
-  document.getElementById("driver-tool").classList.toggle("hidden", !active);
-  document.getElementById("driver-divider").classList.toggle("hidden", !active);
+  document.getElementById("driver-tool").classList.toggle("hidden", !e.detail.active);
+  document.getElementById("driver-divider").classList.toggle("hidden", !e.detail.active);
 });
 
-/* ── Loading overlay ──────────────────────────────────────────────────────── */
-
+/* ── Loading + Toast ─────────────────────────────────────────────────────── */
 const loading = document.getElementById("loading");
 export const showLoading = () => loading.classList.add("visible");
 export const hideLoading = () => loading.classList.remove("visible");
-
-/* ── Toast notification ───────────────────────────────────────────────────── */
 
 export function showToast(msg) {
   const t = document.createElement("div");
@@ -54,8 +53,7 @@ export function showToast(msg) {
   setTimeout(() => t.remove(), 4000);
 }
 
-/* ── Fuel chips ───────────────────────────────────────────────────────────── */
-
+/* ── Fuel chips + country select ─────────────────────────────────────────── */
 export function buildFuelChips(onChange) {
   const container = document.getElementById("fuel-chips");
   FUELS.forEach((fuel) => {
@@ -74,11 +72,7 @@ export function buildFuelChips(onChange) {
 }
 
 export const getActiveFuels = () =>
-  [...document.querySelectorAll("#fuel-chips input:checked")].map(
-    (el) => el.value,
-  );
-
-/* ── Country select ───────────────────────────────────────────────────────── */
+  [...document.querySelectorAll("#fuel-chips input:checked")].map((el) => el.value);
 
 export function buildCountrySelect(countries, onChange) {
   const sel = document.getElementById("country-select");
@@ -93,147 +87,92 @@ export function buildCountrySelect(countries, onChange) {
 
 /* ── Detail Panel ─────────────────────────────────────────────────────────── */
 
-export function showDetail(plant, nearestDriver = null) {
-  const fuelColor = normalizeFuel(plant.fuel);
+const EMPTY_VAL = `<span class="detail-val detail-empty">—</span>`;
+
+function detailRow(key, valHtml) {
+  return `<div class="detail-row"><span class="detail-key">${key}</span>${valHtml}</div>`;
+}
+
+function renderDetail(plant, nearestDriver) {
+  const target = document.getElementById("detail-content");
+  if (!plant) {
+    target.innerHTML = `
+      <div class="detail-name detail-empty">Hover a marker…</div>
+      ${["Country", "Fuel", "Energy type", "Capacity", "Coordinates", "Nearby deforest."]
+        .map((k) => detailRow(k, EMPTY_VAL)).join("")}`;
+    return;
+  }
+  const fuelColor = FUEL_COLORS[normalizeFuel(plant.fuel)];
   const fossil = isFossil(plant.fuel);
-  const energyTypeLabel = fossil ? "Fossil" : "Clean";
-  const energyTypeColor = fossil ? "#e74c3c" : "#27ae60";
-  const deforestRow = `<div class="detail-row">
-      <span class="detail-key">Nearby deforest.</span>
-      <span class="detail-val${nearestDriver ? "" : " detail-empty"}">
-        ${nearestDriver
-          ? `<span class="detail-fuel-dot" style="background:${DEFOREST_COLORS[nearestDriver.driver]}"></span>${escapeHtml(nearestDriver.cause)}`
-          : "—"}
-      </span>
-    </div>`;
-  document.getElementById("detail-content").innerHTML = `
+  const energyColor = fossil ? "#e74c3c" : "#27ae60";
+  const energyLabel = fossil ? "Fossil" : "Clean";
+  const nearby = nearestDriver
+    ? `<span class="detail-val"><span class="detail-fuel-dot" style="background:${DEFOREST_COLORS[nearestDriver.driver]}"></span>${escapeHtml(nearestDriver.cause)}</span>`
+    : EMPTY_VAL;
+
+  target.innerHTML = `
     <div class="detail-name">${escapeHtml(plant.name)}</div>
-    <div class="detail-row">
-      <span class="detail-key">Country</span>
-      <span class="detail-val">${escapeHtml(plant.country)}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Fuel</span>
-      <span class="detail-val">
-        <span class="detail-fuel-dot" style="background:${FUEL_COLORS[fuelColor]}"></span>
-        ${escapeHtml(plant.fuel || "Unknown")}
-      </span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Energy type</span>
-      <span class="detail-val" style="color:${energyTypeColor};font-weight:600">${energyTypeLabel}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Capacity</span>
-      <span class="detail-val">${plant.capacity > 0 ? plant.capacity.toLocaleString() + " MW" : "N/A"}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Coordinates</span>
-      <span class="detail-val">${plant.lat.toFixed(2)}°, ${plant.lng.toFixed(2)}°</span>
-    </div>
-    ${deforestRow}`;
+    ${detailRow("Country", `<span class="detail-val">${escapeHtml(plant.country)}</span>`)}
+    ${detailRow("Fuel", `<span class="detail-val"><span class="detail-fuel-dot" style="background:${fuelColor}"></span>${escapeHtml(plant.fuel || "Unknown")}</span>`)}
+    ${detailRow("Energy type", `<span class="detail-val" style="color:${energyColor};font-weight:600">${energyLabel}</span>`)}
+    ${detailRow("Capacity", `<span class="detail-val">${plant.capacity > 0 ? plant.capacity.toLocaleString() + " MW" : "N/A"}</span>`)}
+    ${detailRow("Coordinates", `<span class="detail-val">${plant.lat.toFixed(2)}°, ${plant.lng.toFixed(2)}°</span>`)}
+    ${detailRow("Nearby deforest.", nearby)}`;
 }
 
-export function clearDetail() {
-  document.getElementById("detail-content").innerHTML = `
-    <div class="detail-name detail-empty">Hover a marker…</div>
-    <div class="detail-row">
-      <span class="detail-key">Country</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Fuel</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Energy type</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Capacity</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Coordinates</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-key">Nearby deforest.</span>
-      <span class="detail-val detail-empty">—</span>
-    </div>`;
-}
+export const showDetail = (plant, nearestDriver = null) => renderDetail(plant, nearestDriver);
+export const clearDetail = () => renderDetail(null);
 
-/* ── Deforestation Stats Panel ────────────────────────────────────────────── */
+/* ── Stat-bar panels (shared layout for deforest drivers + plant fuels) ──── */
 
-function ensureDeforestRows() {
-  const rowsEl = document.getElementById("deforest-stats-rows");
-  if (!rowsEl || rowsEl.querySelector("[data-driver]")) return;
-  rowsEl.innerHTML = Object.entries(DEFOREST_CAUSES).map(([driver, label]) => `
-    <div class="deforest-stat-row" data-driver="${driver}">
-      <span class="legend-dot" style="background:${DEFOREST_COLORS[driver]};flex-shrink:0"></span>
+function ensureStatRows(rowsEl, entries, dataKey) {
+  if (!rowsEl || rowsEl.querySelector(`[data-${dataKey}]`)) return;
+  rowsEl.innerHTML = entries.map(([key, label, color]) => `
+    <div class="deforest-stat-row" data-${dataKey}="${key}">
+      <span class="legend-dot" style="background:${color};flex-shrink:0"></span>
       <span class="deforest-stat-label">${label}</span>
       <div class="deforest-stat-bar-wrap">
-        <div class="deforest-stat-bar" style="width:0%;background:${DEFOREST_COLORS[driver]}"></div>
+        <div class="deforest-stat-bar" style="width:0%;background:${color}"></div>
       </div>
       <span class="deforest-stat-pct">0%</span>
     </div>`).join("");
 }
 
+function updateStatRows(rowsEl, entries, dataKey, counts) {
+  ensureStatRows(rowsEl, entries, dataKey);
+  const total = Object.values(counts).reduce((s, v) => s + v, 0);
+  entries.forEach(([key]) => {
+    const row = rowsEl.querySelector(`[data-${dataKey}="${key}"]`);
+    if (!row) return;
+    const pct = total > 0 ? ((counts[key] || 0) / total) * 100 : 0;
+    row.querySelector(".deforest-stat-bar").style.width = pct.toFixed(1) + "%";
+    row.querySelector(".deforest-stat-pct").textContent = pct.toFixed(0) + "%";
+  });
+}
+
+const DRIVER_ENTRIES = Object.entries(DEFOREST_CAUSES)
+  .map(([id, label]) => [id, label, DEFOREST_COLORS[id]]);
+const FUEL_ENTRIES = FUELS.map((f) => [f, f, FUEL_COLORS[f]]);
+
 export function showDeforestStats(driverCounts) {
   const statsEl = document.getElementById("deforest-stats");
   const rowsEl = document.getElementById("deforest-stats-rows");
   if (!statsEl || !rowsEl) return;
-  ensureDeforestRows();
   statsEl.classList.remove("hidden");
-
-  const total = Object.values(driverCounts).reduce((s, v) => s + v, 0);
-  Object.entries(DEFOREST_CAUSES).forEach(([driver]) => {
-    const row = rowsEl.querySelector(`[data-driver="${driver}"]`);
-    if (!row) return;
-    const pct = total > 0 ? ((driverCounts[driver] || 0) / total) * 100 : 0;
-    row.querySelector(".deforest-stat-bar").style.width = pct.toFixed(1) + "%";
-    row.querySelector(".deforest-stat-pct").textContent = pct.toFixed(0) + "%";
-  });
+  updateStatRows(rowsEl, DRIVER_ENTRIES, "driver", driverCounts);
 }
 
 export function hideDeforestStats() {
   const statsEl = document.getElementById("deforest-stats");
   const rowsEl = document.getElementById("deforest-stats-rows");
   if (!statsEl) return;
-  rowsEl?.querySelectorAll("[data-driver] .deforest-stat-bar")
-    .forEach((bar) => { bar.style.width = "0%"; });
-  rowsEl?.querySelectorAll("[data-driver] .deforest-stat-pct")
-    .forEach((el) => { el.textContent = "0%"; });
+  rowsEl?.querySelectorAll(".deforest-stat-bar").forEach((b) => { b.style.width = "0%"; });
+  rowsEl?.querySelectorAll(".deforest-stat-pct").forEach((el) => { el.textContent = "0%"; });
   statsEl.classList.add("hidden");
-}
-
-/* ── Plant Stats Panel ────────────────────────────────────────────────────── */
-
-function ensurePlantRows() {
-  const rowsEl = document.getElementById("plant-stats-rows");
-  if (!rowsEl || rowsEl.querySelector("[data-fuel]")) return;
-  rowsEl.innerHTML = FUELS.map((fuel) => `
-    <div class="deforest-stat-row" data-fuel="${fuel}">
-      <span class="legend-dot" style="background:${FUEL_COLORS[fuel]};flex-shrink:0"></span>
-      <span class="deforest-stat-label">${fuel}</span>
-      <div class="deforest-stat-bar-wrap">
-        <div class="deforest-stat-bar" style="width:0%;background:${FUEL_COLORS[fuel]}"></div>
-      </div>
-      <span class="deforest-stat-pct">0%</span>
-    </div>`).join("");
 }
 
 export function showPlantStats(fuelCounts) {
   const rowsEl = document.getElementById("plant-stats-rows");
   if (!rowsEl) return;
-  ensurePlantRows();
-
-  const total = Object.values(fuelCounts).reduce((s, v) => s + v, 0);
-  FUELS.forEach((fuel) => {
-    const row = rowsEl.querySelector(`[data-fuel="${fuel}"]`);
-    if (!row) return;
-    const pct = total > 0 ? ((fuelCounts[fuel] || 0) / total) * 100 : 0;
-    row.querySelector(".deforest-stat-bar").style.width = pct.toFixed(1) + "%";
-    row.querySelector(".deforest-stat-pct").textContent = pct.toFixed(0) + "%";
-  });
+  updateStatRows(rowsEl, FUEL_ENTRIES, "fuel", fuelCounts);
 }
