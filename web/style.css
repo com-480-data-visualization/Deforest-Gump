@@ -43,8 +43,8 @@
   --radius-sm: 3px;
 
   /* Type */
-  --serif: "Instrument Serif", "Times New Roman", serif;
-  --sans: "Inter", system-ui, -apple-system, sans-serif;
+  --serif: "Playfair Display", "Times New Roman", Georgia, serif;
+  --sans: "Lora", Georgia, serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
