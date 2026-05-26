@@ -56,6 +56,34 @@ export function getNearestDeforestDriver(lat, lng, radiusDeg = 2) {
   return nearest;
 }
 
+let _definitiveDeforestCache = null;
+
+/* Returns Map<iso3, definitiveDeforestPct> for all countries globally.
+   Definitive drivers = 1 (commodity), 2 (shifting), 5 (urbanization).
+   Returns null if deforestation data has not loaded yet.
+   Always uses the full unfiltered dataset so the conclusion chart is
+   independent of country/driver filters. Result is cached after first call. */
+export function getDefinitiveDeforestPctByCountry() {
+  if (_definitiveDeforestCache) return _definitiveDeforestCache;
+  if (!deforestGeoJSON) return null;
+  const totals = new Map();
+  for (const f of deforestGeoJSON.features) {
+    const cc3 = f.properties.cc3;
+    if (!cc3) continue;
+    if (!totals.has(cc3)) totals.set(cc3, { def: 0, total: 0 });
+    const c = totals.get(cc3);
+    c.total++;
+    const d = f.properties.driver;
+    if (d === 1 || d === 2 || d === 5) c.def++;
+  }
+  const result = new Map();
+  totals.forEach((c, iso3) => {
+    result.set(iso3, c.total > 0 ? (c.def / c.total) * 100 : 0);
+  });
+  _definitiveDeforestCache = result;
+  return result;
+}
+
 /* Update which drivers are shown on the overlay without re-fetching. */
 export function setDeforestDriverFilter(activeDrivers) {
   deforestActiveDrivers = new Set(activeDrivers);

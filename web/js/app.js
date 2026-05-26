@@ -14,6 +14,7 @@ import {
   isDeforestVisible,
   getDeforestStats,
   getDeforestStatsByCountry,
+  getDefinitiveDeforestPctByCountry,
   getNearestDeforestDriver,
   setDeforestDriverFilter,
   setDeforestCountryFilter,
@@ -27,8 +28,8 @@ import {
   CorrelationScatter,
   TopDeforestCountries,
   FossilGauge,
-  RegionalCompass,
-  FuelCountryOverlap,
+  DeforestGauge,
+  ConclusionScatter,
 } from "./charts.js";
 
 const map = L.map("map", { zoomControl: true, minZoom: 2 }).setView([20, 0], 2);
@@ -69,7 +70,7 @@ Promise.all([
     buildCountrySelect(countries, onFilterChange);
     let pieChart;
     buildFuelChips(() => { if (pieChart) pieChart.resetSelection(); onFilterChange(); });
-    buildDriverChips(() => { refreshDeforestSidebar(); refreshDeforestDist(); refreshCharts(); });
+    buildDriverChips(() => { refreshDeforestSidebar(); refreshCharts(); });
     buildPopSlider();
 
     /* getNearest callback: injected into buildMarkers to avoid circular dep */
@@ -87,7 +88,7 @@ Promise.all([
     const fossilForestCard = document.getElementById("fossil-forest-card");
     const fossilShareCard = document.getElementById("fossil-share-card");
     const topDeforestCard = document.getElementById("top-deforest-card");
-    const whereViewCard = document.getElementById("where-view-card");
+    const deforestShareCard = document.getElementById("deforest-share-card");
 
     function updateSidePanelVisibility() {
       const deforestOn = isDeforestVisible();
@@ -97,8 +98,8 @@ Promise.all([
       totalCapacityCard.classList.toggle("hidden", !plantsVisible);
       fossilShareCard.classList.toggle("hidden", !plantsVisible);
       topDeforestCard.classList.toggle("hidden", !deforestOn);
+      deforestShareCard.classList.toggle("hidden", !deforestOn);
       fossilForestCard.classList.toggle("hidden", !both);
-      whereViewCard.classList.toggle("hidden", !both);
     }
 
     plantsBtn.addEventListener("click", () => {
@@ -126,10 +127,10 @@ Promise.all([
       onFilterChange();
     });
     const fossilGauge = new FossilGauge("plot-7");
+    const deforestGauge = new DeforestGauge("plot-9");
     const iso3ToCountry = new Map(data.filter((d) => d.iso3 && d.country).map((d) => [d.iso3, d.country]));
     const topDeforestChart = new TopDeforestCountries("plot-8", iso3ToCountry);
-    const regionCompass = new RegionalCompass("plot-10", data, correlationData);
-    const fuelOverlapChart = new FuelCountryOverlap("plot-11", data);
+    const conclusionScatter = new ConclusionScatter("plot-11", correlationData);
 
     const scatter = new CorrelationScatter(
       "plot-4",
@@ -181,9 +182,8 @@ Promise.all([
       const deforestByIso3 = getDeforestStatsByCountry(s, n, w, e);
       scatter.update(visiblePlants, deforestByIso3);
       fossilGauge.update(visiblePlants);
+      deforestGauge.update(filterByActiveDrivers(getDeforestStats(s, n, w, e)));
       topDeforestChart.update(deforestByIso3);
-      regionCompass.update(visiblePlants, deforestByIso3);
-      fuelOverlapChart.update(-90, 90, -180, 180, FUELS, "ALL", getDeforestStatsByCountry(-90, 90, -180, 180));
     }
 
     function getActiveDrivers() {
@@ -216,11 +216,16 @@ Promise.all([
       setPopulationCountryFilter(iso3);
     }
 
+    let conclusionScatterSeeded = false;
     document.addEventListener("deforest-toggled", (e) => {
       updateSidePanelVisibility();
       if (e.detail.active) {
         refreshDeforestSidebar();
         refreshCharts();
+        if (!conclusionScatterSeeded) {
+          conclusionScatter.update(getDefinitiveDeforestPctByCountry());
+          conclusionScatterSeeded = true;
+        }
       } else {
         hideDeforestStats();
         refreshCharts();
@@ -331,3 +336,29 @@ function buildPopSlider() {
     setPopulationThreshold(val / 100);
   });
 }
+
+/* ── Toolbar pushed up by conclusion section on scroll ───────────────────── */
+
+(function () {
+  const toolbar = document.getElementById("controls");
+  const conclusion = document.querySelector(".conclusion-section");
+  if (!toolbar || !conclusion) return;
+
+  let rafId = null;
+
+  function update() {
+    const toolbarH = toolbar.offsetHeight;
+    const conclusionTop = conclusion.getBoundingClientRect().top;
+    // overlap = how many px of the conclusion section are above the toolbar bottom
+    const overlap = Math.min(toolbarH, Math.max(0, toolbarH - conclusionTop));
+    toolbar.style.transform = `translateY(${-overlap}px)`;
+    toolbar.style.pointerEvents = overlap >= toolbarH ? "none" : "";
+  }
+
+  window.addEventListener("scroll", () => {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => { rafId = null; update(); });
+  }, { passive: true });
+
+  update();
+})();

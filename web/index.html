@@ -205,6 +205,7 @@
     <!-- /.hero-section -->
 
     <!-- ── Toolbar / filters ─────────────────────────────────────────────── -->
+    <div class="toolbar-sticky">
     <div id="controls" class="toolbar">
       <div class="tool">
         <span class="tool-label">Country</span>
@@ -273,6 +274,7 @@
         </div>
       </div>
     </div>
+    </div><!-- /.toolbar-sticky -->
 
     <main>
       <!-- ── Map + side panel ────────────────────────────────────────────── -->
@@ -385,6 +387,21 @@
             </div>
           </div>
 
+          <div class="panel-card card chart-card" id="deforest-share-card">
+            <div class="card-head">
+              <h3 class="card-title">Definitive deforestation share</h3>
+              <span class="card-meta">Current view</span>
+            </div>
+            <svg
+              id="plot-9"
+              viewBox="0 0 260 110"
+              preserveAspectRatio="xMidYMid meet"
+            ></svg>
+            <div class="chart-hint chart-foot">
+              Commodity · Urbanization · Shifting share of all drivers
+            </div>
+          </div>
+
           <div class="panel-card card chart-card" id="top-deforest-card">
             <div class="card-head">
               <h3 class="card-title">Top deforested countries</h3>
@@ -397,20 +414,6 @@
             ></svg>
           </div>
 
-          <div class="panel-card card chart-card" id="where-view-card">
-            <div class="card-head">
-              <h3 class="card-title">Where is this view?</h3>
-              <span class="card-meta">Fossil % vs. deforestation</span>
-            </div>
-            <svg
-              id="plot-10"
-              viewBox="0 0 260 130"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
-            <div class="chart-hint chart-foot">
-              Green dot = current view · grey = all countries
-            </div>
-          </div>
         </div>
       </section>
 
@@ -447,27 +450,36 @@
               supply chains that extract coal also open roads into previously
               inaccessible interiors.
             </p>
+            <p class="axis-body">
+              Each dot below is a country. The horizontal axis shows how much
+              of its electricity comes from fossil fuels; the vertical axis
+              shows what share of its deforestation is <em>definitive</em> —
+              commodity agriculture, shifting cultivation, and urbanization,
+              the causes that leave no forest behind.
+            </p>
+            <div class="axis-chart-wrap">
+              <svg
+                id="plot-11"
+                viewBox="0 0 260 155"
+                preserveAspectRatio="xMidYMid meet"
+              ></svg>
+              <div class="chart-hint chart-foot">
+                Each dot = one country · size = deforestation pixels ·
+                color = dominant fuel · hover for details
+              </div>
+            </div>
+            <p class="axis-body">
+              If fossil energy caused deforestation, the dots would climb from
+              left to right. They do not. High fossil shares appear at every
+              level of definitive deforestation, and vice versa. The forest
+              disappears for land, not for power — clearing driven by commodity
+              agriculture and urban sprawl that operates independently of the
+              energy mix.
+            </p>
             <blockquote class="axis-pullquote">
               "Renewable grids and vanishing forests coexist as often as coal
               grids and intact ones."
             </blockquote>
-            <div class="axis-chart-wrap">
-              <svg
-                id="plot-11"
-                viewBox="0 0 260 110"
-                preserveAspectRatio="xMidYMid meet"
-              ></svg>
-              <div class="chart-hint chart-foot">
-                % of countries with that fuel <em>and</em> deforestation ·
-                global · higher = more co-present
-              </div>
-            </div>
-            <p class="axis-body">
-              Deforestation isn't just only power-plant emissions at the local
-              scale, it misses the primary drivers: commodity agriculture, road
-              penetration, and climate feedbacks. Addressing deforestation
-              requires cross-sector governance, not just an energy transition.
-            </p>
           </article>
 
           <!-- Axis II -->
