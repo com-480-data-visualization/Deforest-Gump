@@ -87,13 +87,30 @@ Promise.all([
     const fuelDivider = document.getElementById("fuel-divider");
     const plantDetailCard = document.getElementById("plant-detail-card");
     const plantStatsCard = document.getElementById("plant-stats");
+    const totalCapacityCard = document.getElementById("total-capacity-card");
+    const fossilForestCard = document.getElementById("fossil-forest-card");
+    const fossilShareCard = document.getElementById("fossil-share-card");
+    const topDeforestCard = document.getElementById("top-deforest-card");
+    const whereViewCard = document.getElementById("where-view-card");
+
+    function updateSidePanelVisibility() {
+      const deforestOn = isDeforestVisible();
+      const both = plantsVisible && deforestOn;
+      plantDetailCard.classList.toggle("hidden", !plantsVisible);
+      plantStatsCard.classList.toggle("hidden", !plantsVisible);
+      totalCapacityCard.classList.toggle("hidden", !plantsVisible);
+      fossilShareCard.classList.toggle("hidden", !plantsVisible);
+      topDeforestCard.classList.toggle("hidden", !deforestOn);
+      fossilForestCard.classList.toggle("hidden", !both);
+      whereViewCard.classList.toggle("hidden", !both);
+    }
+
     plantsBtn.addEventListener("click", () => {
       plantsVisible = !plantsVisible;
       plantsBtn.classList.toggle("active", plantsVisible);
       fuelTool.classList.toggle("hidden", !plantsVisible);
       fuelDivider.classList.toggle("hidden", !plantsVisible);
-      plantDetailCard.classList.toggle("hidden", !plantsVisible);
-      plantStatsCard.classList.toggle("hidden", !plantsVisible);
+      updateSidePanelVisibility();
       if (plantsVisible) {
         plantsGroup.addTo(map);
       } else {
@@ -218,6 +235,7 @@ Promise.all([
     }
 
     document.addEventListener("deforest-toggled", (e) => {
+      updateSidePanelVisibility();
       if (e.detail.active) {
         refreshDeforestSidebar();
         refreshDeforestDist();
