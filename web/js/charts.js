@@ -854,14 +854,16 @@ export class TopDeforestCountries {
       return;
     }
 
-    // Top 5 by count
+    // Top 5 by count — rank stored in datum so position callbacks use d.rank,
+    // not the selection index i (which reflects DOM order, not sorted rank).
     const top5 = [...deforestByIso3.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([iso3, count]) => ({
+      .map(([iso3, count], rank) => ({
         iso3,
         name: (this._iso3ToCountry.get(iso3) || iso3).slice(0, 16),
         count,
+        rank,
       }));
 
     const maxCount = top5[0].count;
@@ -872,11 +874,11 @@ export class TopDeforestCountries {
     const bars = this.g.selectAll("rect.top-bar").data(top5, (d) => d.iso3);
     bars.enter().append("rect").attr("class", "top-bar")
       .attr("rx", 3).attr("ry", 3)
-      .attr("y", (d, i) => this.yS(i)).attr("height", this.yS.bandwidth())
+      .attr("y", (d) => this.yS(d.rank)).attr("height", this.yS.bandwidth())
       .attr("width", 0).attr("fill", "var(--forest)").attr("opacity", 0.75);
 
     this.g.selectAll("rect.top-bar").transition(t)
-      .attr("y", (d, i) => this.yS(i))
+      .attr("y", (d) => this.yS(d.rank))
       .attr("height", this.yS.bandwidth())
       .attr("width", (d) => this.xS(d.count))
       .attr("fill", "var(--forest)");
@@ -888,7 +890,7 @@ export class TopDeforestCountries {
     names.enter().append("text").attr("class", "tick top-name")
       .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle");
     this.g.selectAll("text.top-name").transition(t)
-      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .attr("y", (d) => this.yS(d.rank) + this.yS.bandwidth() / 2)
       .text((d) => d.name);
     names.exit().remove();
 
@@ -898,7 +900,7 @@ export class TopDeforestCountries {
       .attr("x", 0).attr("dominant-baseline", "middle");
     this.g.selectAll("text.top-val").transition(t)
       .attr("x", (d) => this.xS(d.count) + 3)
-      .attr("y", (d, i) => this.yS(i) + this.yS.bandwidth() / 2)
+      .attr("y", (d) => this.yS(d.rank) + this.yS.bandwidth() / 2)
       .text((d) => d3.format(",")(d.count));
     labels.exit().remove();
   }
