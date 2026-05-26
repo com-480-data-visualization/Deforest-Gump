@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deforest Gump</title>
+    <title>Deforest Gump · The Forest Dispatch</title>
     <meta
       name="author"
       content="Simon Barras, Oliver Daoud, Phuc-hung Truong"
@@ -12,11 +12,607 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="lib/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- ─── Newspaper / Refined art-direction overrides ───────────────── -->
+    <style>
+      :root {
+        /* Surface / paper */
+        --bg:           #f3f0e6;        /* newsprint */
+        --paper:        #faf8f1;
+        --surface:      #ffffff;
+        --surface-soft: #fbfaf6;
+        --rule:         #ddd7c6;        /* hairline */
+        --rule-strong:  #b8b1a0;
+        --rule-ink:     #1c1b18;
+
+        /* Ink */
+        --ink:          #15140f;
+        --ink-2:        #4a4740;
+        --ink-3:        #807c70;
+        --ink-4:        #b8b3a4;
+
+        /* Brand */
+        --forest:       #1c3a2a;
+        --forest-2:     #2f5d44;
+        --moss:         #6b8a6e;
+        --sand:         #d9d3bf;
+        --paper-tint:   #efece2;
+
+        /* Accent */
+        --accent:       #b04a1a;        /* ink-stamp red */
+        --warn:         #b45309;
+
+        --serif:  'Instrument Serif', 'Times New Roman', Times, serif;
+        --sans:   'Inter', system-ui, -apple-system, sans-serif;
+        --mono:   'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+
+      html, body { background: var(--bg); }
+      body {
+        font-family: var(--sans);
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: "ss01","cv11";
+      }
+
+      /* ── NEWSPAPER MASTHEAD ─────────────────────────────────────────── */
+      .masthead {
+        background: var(--paper);
+        border-bottom: 1px solid var(--rule);
+        padding: 0;
+        display: block;
+      }
+      .masthead .brand,
+      .masthead .masthead-meta { display: none; }
+
+      .paper-masthead {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 22px 32px 18px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: end;
+        gap: 28px;
+        position: relative;
+      }
+      .paper-masthead::after {
+        content: "";
+        position: absolute;
+        left: 32px; right: 32px; bottom: -1px;
+        height: 4px;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .pm-side {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-2);
+        line-height: 1.55;
+      }
+      .pm-side.right { text-align: right; }
+      .pm-side em {
+        font-style: italic;
+        color: var(--ink-3);
+        font-family: var(--serif);
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: 12px;
+      }
+      .pm-title {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: clamp(48px, 7.4vw, 96px);
+        line-height: 0.9;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        text-align: center;
+        white-space: nowrap;
+      }
+      .pm-title em {
+        font-style: italic;
+        color: var(--forest);
+      }
+      .pm-tagline {
+        margin-top: 14px;
+        padding-top: 10px;
+        border-top: 1px solid var(--rule);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-2);
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .pm-tagline span.dot {
+        width: 3px; height: 3px;
+        border-radius: 50%;
+        background: var(--ink-3);
+        display: inline-block;
+      }
+
+      /* ── HERO ARTICLE (the Data Story) ──────────────────────────────── */
+      .hero-section {
+        background: var(--paper);
+        border-bottom: 1px solid var(--ink);
+        padding: 0;
+      }
+
+      /* Hide the old lede/story chrome — we replace it with .article below */
+      #intro-banner { display: none; }
+      .hero-section > .story-section { display: none; }
+      .hero-section > .scroll-cue { display: none; }
+
+      .article {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 40px 32px 56px;
+      }
+
+      /* Section eyebrow */
+      .article-eyebrow {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+      .article-eyebrow::before,
+      .article-eyebrow::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--ink);
+      }
+      .article-eyebrow::before { max-width: 80px; }
+
+      /* Headline block */
+      .headline-block {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        text-align: center;
+        max-width: 980px;
+        margin: 0 auto 18px;
+      }
+      .article-kicker {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--forest);
+      }
+      .article-headline {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: clamp(46px, 6.4vw, 88px);
+        line-height: 0.97;
+        letter-spacing: -0.022em;
+        color: var(--ink);
+      }
+      .article-headline em {
+        font-style: italic;
+        color: var(--forest);
+      }
+      .article-deck {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: clamp(18px, 1.7vw, 22px);
+        line-height: 1.35;
+        color: var(--ink-2);
+        max-width: 64ch;
+        margin: 0 auto;
+      }
+
+      /* Byline strip */
+      .byline-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 0;
+        margin: 22px 0 0;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--rule);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-2);
+      }
+      .byline-strip .by {
+        color: var(--ink);
+      }
+      .byline-strip .by strong {
+        font-weight: 600;
+        letter-spacing: 0.14em;
+      }
+      .byline-strip .by em {
+        font-family: var(--serif);
+        font-style: italic;
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: 13px;
+        color: var(--ink-3);
+        margin-left: 4px;
+      }
+      .byline-strip .meta {
+        display: flex; gap: 18px;
+        color: var(--ink-3);
+      }
+      .byline-strip .meta span.dot {
+        color: var(--ink-4);
+      }
+
+      /* Body — three-column newspaper layout */
+      .article-body {
+        margin-top: 28px;
+        column-count: 3;
+        column-gap: 30px;
+        column-rule: 1px solid var(--rule);
+        font-family: var(--serif);
+        font-size: 17.5px;
+        line-height: 1.45;
+        color: var(--ink);
+        text-align: justify;
+        hyphens: auto;
+        -webkit-hyphens: auto;
+      }
+      .article-body p {
+        margin: 0 0 10px;
+        text-indent: 1.4em;
+      }
+      .article-body p:first-of-type { text-indent: 0; }
+      .article-body p.lead {
+        text-indent: 0;
+      }
+      .article-body .dropcap::first-letter {
+        font-family: var(--serif);
+        font-weight: 400;
+        float: left;
+        font-size: 4.6em;
+        line-height: 0.86;
+        padding: 6px 10px 0 0;
+        color: var(--forest);
+        font-style: normal;
+      }
+      .article-body .pullquote {
+        break-inside: avoid;
+        margin: 8px 0 14px;
+        padding: 14px 0;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 22px;
+        line-height: 1.18;
+        color: var(--forest);
+        text-align: left;
+        text-indent: 0;
+      }
+      .article-body .pullquote::before {
+        content: "“";
+        font-size: 1.4em;
+        line-height: 0;
+        vertical-align: -0.05em;
+        margin-right: 4px;
+        color: var(--accent);
+      }
+      .article-body .pullquote::after {
+        content: "”";
+        line-height: 0;
+        margin-left: 2px;
+        color: var(--accent);
+      }
+      .article-body .figure-stub {
+        break-inside: avoid;
+        margin: 10px 0 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--rule);
+        text-indent: 0;
+      }
+      .article-body .figure-stub .figure {
+        height: 110px;
+        background:
+          repeating-linear-gradient(45deg,
+            rgba(28, 58, 42, 0.10) 0 6px,
+            rgba(28, 58, 42, 0.02) 6px 12px);
+        border: 1px solid var(--rule-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .article-body .figure-stub figcaption {
+        font-family: var(--sans);
+        font-size: 11px;
+        line-height: 1.4;
+        color: var(--ink-3);
+        margin-top: 6px;
+        font-style: normal;
+      }
+      .article-body .figure-stub figcaption b {
+        color: var(--ink-2);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 10px;
+      }
+
+      /* Stats inline strip below the article body */
+      .article-stats {
+        margin-top: 26px;
+        padding: 20px 0;
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .article-stats .stat {
+        text-align: center;
+        padding: 0 18px;
+        border-right: 1px solid var(--rule);
+      }
+      .article-stats .stat:last-child { border-right: none; }
+      .article-stats .stat-num {
+        font-family: var(--serif);
+        font-size: clamp(40px, 4.6vw, 64px);
+        line-height: 1;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+        display: block;
+      }
+      .article-stats .stat-num em {
+        font-style: italic;
+        color: var(--forest);
+      }
+      .article-stats .stat-label {
+        margin-top: 8px;
+        display: block;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+
+      /* ── DISPATCHES (the three "acts") ──────────────────────────────── */
+      .dispatches {
+        margin-top: 40px;
+      }
+      .dispatches-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 18px;
+        padding-bottom: 14px;
+        border-bottom: 2px solid var(--ink);
+        margin-bottom: 0;
+      }
+      .dispatches-head h3 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: clamp(28px, 3.4vw, 44px);
+        line-height: 1;
+        letter-spacing: -0.018em;
+        color: var(--ink);
+      }
+      .dispatches-head h3 em { font-style: italic; color: var(--forest); }
+      .dispatches-head .hint {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+
+      .dispatches-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .dispatch {
+        all: unset;
+        display: block;
+        cursor: pointer;
+        padding: 24px 22px 22px;
+        border-right: 1px solid var(--rule);
+        background: transparent;
+        position: relative;
+        transition: background .2s ease;
+        text-align: left;
+      }
+      .dispatch:last-child { border-right: none; }
+      .dispatch:hover { background: rgba(28, 58, 42, 0.04); }
+      .dispatch:focus-visible { outline: 2px solid var(--forest); outline-offset: -4px; }
+
+      .dispatch-roman {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 64px;
+        line-height: 0.9;
+        color: var(--forest);
+        opacity: 0.9;
+        margin-bottom: 6px;
+      }
+      .dispatch-tag {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+      .dispatch-tag::before {
+        content: "■  ";
+        color: var(--accent);
+        margin-right: 4px;
+      }
+      .dispatch-title {
+        font-family: var(--serif);
+        font-size: 30px;
+        font-weight: 400;
+        line-height: 1.04;
+        letter-spacing: -0.012em;
+        color: var(--ink);
+        margin: 0 0 6px;
+      }
+      .dispatch-dateline {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--rule);
+        margin-bottom: 12px;
+      }
+      .dispatch-dateline strong {
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+      .dispatch-desc {
+        font-family: var(--serif);
+        font-size: 15.5px;
+        line-height: 1.45;
+        color: var(--ink-2);
+        margin-bottom: 14px;
+      }
+      .dispatch-desc::first-letter {
+        font-family: var(--serif);
+        font-size: 2.4em;
+        float: left;
+        line-height: 0.9;
+        padding: 4px 6px 0 0;
+        color: var(--forest);
+      }
+      .dispatch-source {
+        font-family: var(--sans);
+        font-size: 10.5px;
+        line-height: 1.5;
+        color: var(--ink-3);
+        padding-top: 12px;
+        border-top: 1px solid var(--rule);
+        letter-spacing: 0;
+      }
+      .dispatch-source em {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--ink-2);
+      }
+      .dispatch-cta {
+        position: absolute;
+        right: 22px;
+        bottom: 18px;
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--forest);
+        opacity: 0;
+        transform: translateX(-4px);
+        transition: opacity .2s, transform .2s;
+      }
+      .dispatch:hover .dispatch-cta {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* ── Scroll cue below article ──────────────────────────────────── */
+      .article-scroll-cue {
+        margin-top: 44px;
+        padding: 20px 0 4px;
+        border-top: 1px solid var(--rule);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .article-scroll-cue::before,
+      .article-scroll-cue::after {
+        content: "";
+        height: 1px;
+        flex: 1;
+        max-width: 220px;
+        background: var(--rule-strong);
+      }
+      .article-scroll-cue .arrow {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 16px;
+        color: var(--forest);
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      /* ── Toolbar / dashboard tweaks to match Refined direction ─────── */
+      .toolbar {
+        background: var(--surface-soft);
+        border-bottom: 1px solid var(--rule);
+        padding: 14px 28px;
+      }
+      .tool-label {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+      .colophon {
+        background: var(--paper);
+        border-top: 1px solid var(--ink);
+        padding: 18px 32px 28px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+      }
+
+      /* ── Responsive ────────────────────────────────────────────────── */
+      @media (max-width: 1100px) {
+        .paper-masthead { grid-template-columns: 1fr; text-align: center; }
+        .pm-side, .pm-side.right { text-align: center; }
+        .pm-title { white-space: normal; }
+        .article-body { column-count: 2; }
+        .dispatches-grid { grid-template-columns: 1fr; }
+        .dispatch { border-right: none; border-bottom: 1px solid var(--rule); }
+      }
+      @media (max-width: 720px) {
+        .article-body { column-count: 1; }
+        .article-stats { grid-template-columns: 1fr; gap: 18px; }
+        .article-stats .stat { border-right: none; border-bottom: 1px solid var(--rule); padding-bottom: 18px; }
+        .article-stats .stat:last-child { border-bottom: none; }
+        .byline-strip { flex-direction: column; align-items: flex-start; gap: 6px; }
+      }
+    </style>
   </head>
 
   <body>
@@ -26,8 +622,9 @@
       <span>Loading power plant data…</span>
     </div>
 
-    <!-- Masthead -->
-    <header class="masthead">
+    <!-- ── Newspaper Masthead ────────────────────────────────────────── -->
+    <header class="masthead" data-screen-label="00 Masthead">
+      <!-- Legacy nodes kept for any JS hooks -->
       <div class="brand">
         <span class="brand-mark"></span>
         <span class="brand-name">Deforest <em>Gump</em></span>
@@ -37,119 +634,226 @@
         <span class="meta-dot"></span>
         <span>2026</span>
       </div>
+
+      <!-- The visible newspaper masthead -->
+      <div class="paper-masthead" aria-hidden="false">
+        <div class="pm-side">
+          Vol.&nbsp;I · No.&nbsp;1<br />
+          <em>The Forest Dispatch</em>
+        </div>
+        <h1 class="pm-title">Deforest <em>Gump</em></h1>
+        <div class="pm-side right">
+          May&nbsp;2026 · EPFL<br />
+          <em>COM-480 · Data Visualization</em>
+        </div>
+        <div class="pm-tagline" style="grid-column: 1 / -1;">
+          <span>A data essay on energy &amp; forests</span>
+          <span class="dot"></span>
+          <span>30 412 power plants</span>
+          <span class="dot"></span>
+          <span>148 countries</span>
+          <span class="dot"></span>
+          <span>500 K+ deforestation pixels</span>
+        </div>
+      </div>
     </header>
 
-    <!-- ── Hero section (full-viewport narrative + story cards) ─────────── -->
+    <!-- ── Hero: Data Story as newspaper article ────────────────────── -->
     <div class="hero-section">
-      <!-- Lede / intro banner -->
-      <section id="intro-banner" class="lede">
-        <div class="lede-text">
-          <div class="lede-eyebrow">A data essay on energy &amp; forests</div>
-          <h2>Where energy <em>meets</em> the forest.</h2>
-          <p class="lede-sub">
-            Fossil-fuel infrastructure and deforestation share the same map —
-            but the relationship is more complex than it looks. Browse 30 000+
-            power plants and 500 000+ deforestation pixels across 148 countries,
-            follow the three guided stories below, then explore freely.
-          </p>
-        </div>
-        <div class="lede-stats">
-          <div class="stat">
-            <span class="stat-num">30K+</span>
-            <span class="stat-label">Power plants</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">148</span>
-            <span class="stat-label">Countries</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">500K+</span>
-            <span class="stat-label">Deforest. pixels</span>
-          </div>
-        </div>
+      <!-- Hidden legacy lede (kept so any JS that targets #intro-banner still finds it) -->
+      <section id="intro-banner" class="lede" aria-hidden="true">
+        <div class="lede-text"></div>
+        <div class="lede-stats"></div>
         <button id="intro-dismiss" aria-label="Close intro">&#x2715;</button>
       </section>
 
-      <!-- ── Guided story section ──────────────────────────────────────────── -->
-      <section class="story-section">
-        <div class="story-eyebrow">
-          <span class="story-rule"></span>
-          Three regions · Three stories · Click to fly there
-          <span class="story-rule"></span>
+      <article class="article" data-screen-label="01 Data Story">
+        <div class="article-eyebrow">The Story · Front Page</div>
+
+        <div class="headline-block">
+          <div class="article-kicker">Energy · Forests · Sustainability</div>
+          <h2 class="article-headline">
+            Where energy <em>meets</em> the forest.
+          </h2>
+          <p class="article-deck">
+            Three pressures share one map — power, people and trees — and the
+            pattern only reveals itself when you look at all of them at once.
+          </p>
         </div>
-        <div class="story-acts">
-          <button class="act-card" data-lat="-5" data-lng="-55" data-zoom="5">
-            <span class="act-num">I</span>
-            <div class="act-body">
-              <strong class="act-title">Amazon Basin</strong>
-              <span class="act-country"
-                >Brazil · 15% fossil share · dominant fuel: Hydro</span
-              >
-              <p class="act-desc">
+
+        <div class="byline-strip">
+          <div class="by">
+            <strong>BY&nbsp;SIMON&nbsp;BARRAS,&nbsp;OLIVER&nbsp;DAOUD&nbsp;&amp;&nbsp;PHUC-HUNG&nbsp;TRUONG</strong>
+            <em>· Editorial Desk</em>
+          </div>
+          <div class="meta">
+            <span>Filed May 26, 2026</span>
+            <span class="dot">·</span>
+            <span>7&nbsp;min read</span>
+            <span class="dot">·</span>
+            <span>Interactive</span>
+          </div>
+        </div>
+
+        <div class="article-body">
+          <p class="lead dropcap">
+            Sustainability is a complex, multivariate problem. Yet in public
+            debate it is too often reduced to a single number: carbon emissions.
+            That shorthand offers a framework anyone can grasp — and, in the
+            same breath, it obscures everything else that holds the living
+            world together.
+          </p>
+          <p>
+            Our objective with this dispatch is to narrow the knowledge gap
+            through smart, interactive visualizations. We follow three
+            entangled forces — energy production, deforestation, and
+            urbanization — and put them in conversation with the sustainability
+            metrics they shape.
+          </p>
+
+          <blockquote class="pullquote">
+            High&nbsp;deforestation does not always mean high&nbsp;fossil&nbsp;fuels. The
+            map tells a more interesting story.
+          </blockquote>
+
+          <p>
+            Across 148 countries, the data reveals patterns that no single
+            indicator can capture alone. A coal-heavy grid does not always sit
+            on cleared land; a hydro-dominated grid does not always protect
+            it. The geography of energy and the geography of forest loss
+            overlap in places, diverge in others — and the difference matters
+            for the policies meant to address them.
+          </p>
+
+          <figure class="figure-stub">
+            <div class="figure">[ scatter · fossil share × forest loss ]</div>
+            <figcaption><b>FIG. 1</b> Each dot a country. Read horizontally for the energy mix, vertically for the canopy.</figcaption>
+          </figure>
+
+          <p>
+            What follows is an atlas in three field reports, then an
+            interactive table on which the reader is invited to draw their own
+            lines. Filter by fuel, overlay deforestation, zoom into a basin.
+            The data is the same on every screen; the questions you bring to
+            it are not.
+          </p>
+          <p>
+            Below, three regions that — together — outline the full shape of
+            the problem.
+          </p>
+        </div>
+
+        <!-- The headline numbers, set like a paper's box rule -->
+        <div class="article-stats">
+          <div class="stat">
+            <span class="stat-num">30<em>K</em>+</span>
+            <span class="stat-label">Power plants mapped</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">148</span>
+            <span class="stat-label">Countries covered</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">500<em>K</em>+</span>
+            <span class="stat-label">Deforestation pixels</span>
+          </div>
+        </div>
+
+        <!-- ── Field reports (formerly story acts) ─────────────────── -->
+        <section class="dispatches" data-screen-label="02 Field Reports">
+          <div class="dispatches-head">
+            <h3>Three regions, three <em>field reports</em></h3>
+            <span class="hint">Tap a column to fly the map there →</span>
+          </div>
+
+          <div class="dispatches-grid story-acts">
+            <button
+              class="dispatch act-card"
+              data-lat="-5"
+              data-lng="-55"
+              data-zoom="5"
+            >
+              <div class="dispatch-roman"><em>I.</em></div>
+              <div class="dispatch-tag">Dispatch · South America</div>
+              <h4 class="dispatch-title act-title">The Amazon Basin</h4>
+              <div class="dispatch-dateline">
+                <strong>Brazil</strong> · 15% fossil share · dominant fuel:
+                Hydro
+              </div>
+              <p class="dispatch-desc act-desc">
                 Commodity-driven deforestation dominates — not energy. Brazil's
-                grid runs mostly on hydropower, yet the Amazon loses millions of
-                hectares each year to soy farms and cattle ranching. High
+                grid runs mostly on hydropower, yet the Amazon loses millions
+                of hectares each year to soy farms and cattle ranching. High
                 deforestation ≠ high fossil fuels.
               </p>
-              <p class="act-source">
+              <p class="dispatch-source act-source">
                 <em>Sources:</em> INPE PRODES (2023) · Gibbs et al.,
                 <em>Science</em> 2010 · Global Forest Watch
               </p>
-            </div>
-            <span class="act-arrow">→</span>
-          </button>
+              <span class="dispatch-cta">Read on the map →</span>
+            </button>
 
-          <button class="act-card" data-lat="0" data-lng="115" data-zoom="5">
-            <span class="act-num">II</span>
-            <div class="act-body">
-              <strong class="act-title">Borneo / SE Asia</strong>
-              <span class="act-country"
-                >Indonesia · 88% fossil share · dominant fuel: Coal</span
-              >
-              <p class="act-desc">
+            <button
+              class="dispatch act-card"
+              data-lat="0"
+              data-lng="115"
+              data-zoom="5"
+            >
+              <div class="dispatch-roman"><em>II.</em></div>
+              <div class="dispatch-tag">Dispatch · Southeast Asia</div>
+              <h4 class="dispatch-title act-title">Borneo &amp; the Coal Belt</h4>
+              <div class="dispatch-dateline">
+                <strong>Indonesia</strong> · 88% fossil share · dominant fuel:
+                Coal
+              </div>
+              <p class="dispatch-desc act-desc">
                 Here the two pressures converge. Coal power fuels rapid
-                industrialisation while palm oil expansion and logging clear one
-                of the planet's most biodiverse forests. The highest fossil
-                share meets significant deforestation.
+                industrialisation while palm oil expansion and logging clear
+                one of the planet's most biodiverse forests. The highest
+                fossil share meets significant deforestation.
               </p>
-              <p class="act-source">
+              <p class="dispatch-source act-source">
                 <em>Sources:</em> Hansen et al., <em>Science</em> 2013 · Vijay
-                et al., <em>PLOS ONE</em> 2016 · IEA World Energy Statistics
-                2022
+                et al., <em>PLOS&nbsp;ONE</em> 2016 · IEA World Energy
+                Statistics 2022
               </p>
-            </div>
-            <span class="act-arrow">→</span>
-          </button>
+              <span class="dispatch-cta">Read on the map →</span>
+            </button>
 
-          <button class="act-card" data-lat="0" data-lng="25" data-zoom="5">
-            <span class="act-num">III</span>
-            <div class="act-body">
-              <strong class="act-title">Congo Basin</strong>
-              <span class="act-country"
-                >DRC · 1% fossil share · dominant fuel: Hydro</span
-              >
-              <p class="act-desc">
+            <button
+              class="dispatch act-card"
+              data-lat="0"
+              data-lng="25"
+              data-zoom="5"
+            >
+              <div class="dispatch-roman"><em>III.</em></div>
+              <div class="dispatch-tag">Dispatch · Central Africa</div>
+              <h4 class="dispatch-title act-title">The Congo Basin</h4>
+              <div class="dispatch-dateline">
+                <strong>DRC</strong> · 1% fossil share · dominant fuel: Hydro
+              </div>
+              <p class="dispatch-desc act-desc">
                 Massive deforestation despite almost zero fossil-fuel
                 infrastructure. Shifting agriculture and subsistence farming
-                drive forest loss here — a stark reminder that energy mix alone
-                cannot explain deforestation pressure.
+                drive forest loss here — a stark reminder that energy mix
+                alone cannot explain deforestation pressure.
               </p>
-              <p class="act-source">
-                <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina et
-                al., <em>Sci. Advances</em> 2018 · SE4All Africa Hub
+              <p class="dispatch-source act-source">
+                <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina
+                et al., <em>Sci.&nbsp;Advances</em> 2018 · SE4All Africa Hub
               </p>
-            </div>
-            <span class="act-arrow">→</span>
-          </button>
-        </div>
-      </section>
+              <span class="dispatch-cta">Read on the map →</span>
+            </button>
+          </div>
+        </section>
 
-      <!-- Scroll indicator -->
-      <div class="scroll-cue">
-        <span class="scroll-cue-icon">↓</span>
-        Scroll to explore the interactive map
-        <span class="scroll-cue-icon">↓</span>
-      </div>
+        <!-- Scroll cue / transition into the dashboard -->
+        <div class="article-scroll-cue">
+          <span>Below the fold</span>
+          <span class="arrow">↓</span>
+          <span>The interactive atlas</span>
+        </div>
+      </article>
     </div>
     <!-- /.hero-section -->
 
@@ -197,16 +901,12 @@
       </div>
 
       <div class="tool-divider hidden" id="driver-divider"></div>
-      <!-- Deforestation driver filter — enabled only when overlay is on -->
       <div class="tool driver-tool hidden" id="driver-tool">
         <span class="tool-label">Deforest. driver</span>
-        <div class="chips" id="driver-chips">
-          <!-- populated by JS -->
-        </div>
+        <div class="chips" id="driver-chips"></div>
       </div>
 
       <div class="tool-divider hidden" id="population-divider"></div>
-      <!-- Population density filter — enabled only when overlay is on -->
       <div class="tool hidden" id="population-tool">
         <span class="tool-label">Population</span>
         <div class="pop-filter">
@@ -242,7 +942,6 @@
         </div>
 
         <div id="side-panel" class="side">
-          <!-- Plant detail -->
           <div class="panel-card card" id="plant-detail-card">
             <div class="card-head">
               <h3 class="card-title">Plant detail</h3>
@@ -273,7 +972,6 @@
             </div>
           </div>
 
-          <!-- Deforestation stats — separate card, visible only when overlay is on -->
           <div class="panel-card card hidden" id="deforest-stats">
             <div class="card-head">
               <h3 class="card-title">Deforestation in view</h3>
@@ -282,7 +980,6 @@
             <div id="deforest-stats-rows"></div>
           </div>
 
-          <!-- Plants stats — always visible -->
           <div class="panel-card card" id="plant-stats">
             <div class="card-head">
               <h3 class="card-title">Plants in view</h3>
@@ -291,7 +988,6 @@
             <div id="plant-stats-rows"></div>
           </div>
 
-          <!-- Total capacity mix -->
           <div class="panel-card card chart-card">
             <div class="card-head">
               <h3 class="card-title">Total Capacity in view</h3>
@@ -300,73 +996,48 @@
                 <span id="total-mw">—</span>
               </span>
             </div>
-            <svg
-              id="plot-3"
-              viewBox="0 0 260 120"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
+            <svg id="plot-3" viewBox="0 0 260 120" preserveAspectRatio="xMidYMid meet"></svg>
             <div id="treemap-label" class="treemap-label">Hover a cell</div>
           </div>
 
-          <!-- Fossil share vs. forest loss -->
           <div class="panel-card card chart-card">
             <div class="card-head">
               <h3 class="card-title">Fossil share vs. forest loss in view</h3>
               <span class="card-meta">Click a dot to filter</span>
             </div>
-            <svg
-              id="plot-4"
-              viewBox="0 0 260 140"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
+            <svg id="plot-4" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
             <div class="chart-hint chart-foot">
               Dot size = plant count · color = dominant fuel
             </div>
           </div>
 
-          <!-- Fossil fuel gauge -->
           <div class="panel-card card chart-card">
             <div class="card-head">
               <h3 class="card-title">Fossil capacity share</h3>
               <span class="card-meta">Current view</span>
             </div>
-            <svg
-              id="plot-7"
-              viewBox="0 0 260 110"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
+            <svg id="plot-7" viewBox="0 0 260 110" preserveAspectRatio="xMidYMid meet"></svg>
             <div class="chart-hint chart-foot">
               Coal · Gas · Oil · Petcoke share of total MW
             </div>
           </div>
 
-          <!-- Top deforested countries -->
           <div class="panel-card card chart-card">
             <div class="card-head">
               <h3 class="card-title">Top deforested countries</h3>
               <span class="card-meta">In current view</span>
             </div>
-            <svg
-              id="plot-8"
-              viewBox="0 0 260 130"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
+            <svg id="plot-8" viewBox="0 0 260 130" preserveAspectRatio="xMidYMid meet"></svg>
           </div>
 
-          <!-- Regional compass -->
           <div class="panel-card card chart-card">
             <div class="card-head">
               <h3 class="card-title">Where is this view?</h3>
               <span class="card-meta">Fossil % vs. deforestation</span>
             </div>
-            <svg
-              id="plot-10"
-              viewBox="0 0 260 130"
-              preserveAspectRatio="xMidYMid meet"
-            ></svg>
+            <svg id="plot-10" viewBox="0 0 260 130" preserveAspectRatio="xMidYMid meet"></svg>
             <div class="chart-hint chart-foot">Green dot = current view · grey = all countries</div>
           </div>
-
         </div>
       </section>
 
@@ -375,13 +1046,10 @@
         <div class="insight-card">
           <div class="insight-num">15%</div>
           <div class="insight-text">
-            <strong
-              >of plants are coal or oil — yet they generate 62% of global
-              electricity.</strong
-            >
+            <strong>of plants are coal or oil — yet they generate 62% of global electricity.</strong>
             <p>
-              This density mismatch means a handful of large thermal plants pull
-              roads, labour, and industrial activity deep into vulnerable
+              This density mismatch means a handful of large thermal plants
+              pull roads, labour, and industrial activity deep into vulnerable
               landscapes. Use the <em>Fuel</em> filter to isolate coal and see
               where they concentrate.
             </p>
@@ -409,11 +1077,7 @@
             <div class="chart-title title">Average capacity</div>
             <div class="subtitle">By fuel type · current view · MW</div>
           </div>
-          <svg
-            id="plot-1"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-1" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
 
         <div class="chart-card">
@@ -421,11 +1085,7 @@
             <div class="chart-title title">Plant count</div>
             <div class="subtitle">By fuel type · current view</div>
           </div>
-          <svg
-            id="plot-2"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-2" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
 
         <div class="chart-card">
@@ -433,11 +1093,7 @@
             <div class="chart-title title">Deforestation drivers</div>
             <div class="subtitle">Pixels by driver · current view</div>
           </div>
-          <svg
-            id="plot-5"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-5" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
 
         <div class="chart-card">
@@ -445,25 +1101,15 @@
             <div class="chart-title title">Plant count distribution</div>
             <div class="subtitle">By fuel type · current view</div>
           </div>
-          <svg
-            id="plot-6"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-6" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
 
         <div class="chart-card">
           <div class="head">
             <div class="chart-title title">Fuel vs. deforestation</div>
-            <div class="subtitle">
-              Avg deforest. pixels per country · by fuel type
-            </div>
+            <div class="subtitle">Avg deforest. pixels per country · by fuel type</div>
           </div>
-          <svg
-            id="plot-9"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-9" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
           <div class="chart-hint chart-foot">
             Higher = fuel found in more deforested countries
           </div>
@@ -474,11 +1120,7 @@
             <div class="chart-title title">Fuel–forest co-presence</div>
             <div class="subtitle">% of countries with fuel AND deforestation · current view</div>
           </div>
-          <svg
-            id="plot-11"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
+          <svg id="plot-11" viewBox="0 0 260 140" preserveAspectRatio="xMidYMid meet"></svg>
           <div class="chart-hint chart-foot">Higher = fuel more co-present with deforestation</div>
         </div>
 
@@ -511,10 +1153,7 @@
               <span class="pb-badge pb-badge--exceeded">Exceeded</span>
             </div>
             <div class="pb-bar-track">
-              <div
-                class="pb-bar-fill pb-bar-fill--exceeded"
-                style="width: 100%"
-              ></div>
+              <div class="pb-bar-fill pb-bar-fill--exceeded" style="width: 100%"></div>
               <div class="pb-bar-limit" style="left: 25%"></div>
             </div>
             <div class="pb-note">
@@ -523,8 +1162,8 @@
             </div>
           </div>
           <p class="pb-footer">
-            Source: Stockholm Resilience Centre, 2023. Each power plant and each
-            deforestation pixel visible on this map is a contributor.
+            Source: Stockholm Resilience Centre, 2023. Each power plant and
+            each deforestation pixel visible on this map is a contributor.
           </p>
         </div>
       </section>
@@ -543,20 +1182,17 @@
       </div>
     </footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
     <script src="lib/leaflet.js"></script>
     <script src="lib/d3.min.js"></script>
     <script type="module" src="js/app.js"></script>
 
     <script>
-      /* Sync driver-tool visibility with deforest toggle state */
       document.addEventListener("deforest-toggled", (e) => {
         const active = e.detail.active;
-        document
-          .getElementById("driver-tool")
-          .classList.toggle("hidden", !active);
-        document
-          .getElementById("driver-divider")
-          .classList.toggle("hidden", !active);
+        document.getElementById("driver-tool").classList.toggle("hidden", !active);
+        document.getElementById("driver-divider").classList.toggle("hidden", !active);
       });
     </script>
   </body>
