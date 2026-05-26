@@ -18,6 +18,18 @@ function syncToolbarHeight() {
 syncToolbarHeight();
 new ResizeObserver(syncToolbarHeight).observe(toolbar);
 
+/* ── Un-stick toolbar when conclusion section scrolls into view ───────────── */
+const conclusionSection = document.querySelector(".conclusion-section");
+if (conclusionSection) {
+  new IntersectionObserver(
+    ([entry]) => {
+      const pastTop = entry.boundingClientRect.top < 0;
+      toolbar.classList.toggle("toolbar--unfixed", entry.isIntersecting || pastTop);
+    },
+    { threshold: 0 }
+  ).observe(conclusionSection);
+}
+
 /* ── Deforestation driver tool visibility ─────────────────────────────────── */
 
 document.addEventListener("deforest-toggled", (e) => {

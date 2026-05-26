@@ -260,6 +260,11 @@ header.masthead {
   z-index: 900;
   box-shadow: 0 1px 8px rgba(24, 26, 23, 0.06);
 }
+#controls.toolbar--unfixed {
+  position: relative;
+  top: auto;
+  box-shadow: none;
+}
 .tool,
 .control-group {
   display: flex;
@@ -1261,6 +1266,178 @@ main .top-row {
 }
 .driver-chip.checked .chip-dot {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+/* ── Conclusion section ────────────────────────────────────────────────── */
+.conclusion-section {
+  background: transparent;
+}
+/* Header matches .dispatches-head exactly */
+.conclusion-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 0;
+}
+.conclusion-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+}
+.conclusion-title em {
+  font-style: normal;
+  color: var(--forest);
+}
+.conclusion-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* Grid matches .dispatches-grid exactly (2 cols instead of 3) */
+.conclusion-axes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+/* Card matches .dispatch exactly, minus pointer/hover */
+.conclusion-axis {
+  display: block;
+  padding: 24px 22px 22px;
+  border-right: 1px solid var(--rule);
+  background: transparent;
+  position: relative;
+  text-align: left;
+}
+.conclusion-axis:last-child {
+  border-right: none;
+}
+/* Inner elements match dispatch-* styles exactly */
+.axis-roman {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 64px;
+  line-height: 0.9;
+  color: var(--forest);
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+.axis-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.axis-tag::before {
+  content: "■  ";
+  color: var(--accent);
+  margin-right: 4px;
+}
+.axis-title {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.axis-dateline {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 12px;
+}
+.axis-body {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.axis-body::first-letter {
+  font-family: var(--serif);
+  font-size: 2.4em;
+  float: left;
+  line-height: 0.9;
+  padding: 4px 6px 0 0;
+  color: var(--forest);
+}
+.axis-body + .axis-body::first-letter {
+  font-size: inherit;
+  float: none;
+  line-height: inherit;
+  padding: 0;
+  color: inherit;
+}
+.axis-pullquote {
+  margin: 14px 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.axis-pb-list {
+  margin: 16px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.axis-pb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.axis-pb-name {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.axis-footer {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  letter-spacing: 0;
+}
+.axis-footer em {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+@media (max-width: 780px) {
+  .conclusion-axes {
+    grid-template-columns: 1fr;
+  }
+  .conclusion-axis {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .conclusion-axis:last-child {
+    border-bottom: none;
+  }
 }
 
 /* ── Insight cards ─────────────────────────────────────────────────────── */
