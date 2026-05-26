@@ -1271,6 +1271,10 @@ main .top-row {
 /* ── Conclusion section ────────────────────────────────────────────────── */
 .conclusion-section {
   background: transparent;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 /* Header matches .dispatches-head exactly */
 .conclusion-header {
@@ -1368,7 +1372,7 @@ main .top-row {
   color: var(--ink-2);
   margin-bottom: 14px;
 }
-.axis-body::first-letter {
+.conclusion-axis > .axis-body:first-of-type::first-letter {
   font-family: var(--serif);
   font-size: 2.4em;
   float: left;
@@ -1376,17 +1380,16 @@ main .top-row {
   padding: 4px 6px 0 0;
   color: var(--forest);
 }
-.axis-body + .axis-body::first-letter {
-  font-size: inherit;
-  float: none;
-  line-height: inherit;
-  padding: 0;
-  color: inherit;
+.axis-chart-wrap {
+  margin: 14px auto;
+  width: 50%;
+}
+.axis-chart-wrap svg {
+  width: 100%;
+  display: block;
 }
 .axis-pullquote {
   margin: 14px 0;
-  padding-top: 12px;
-  border-top: 1px solid var(--rule);
   font-family: var(--serif);
   font-style: italic;
   font-size: 15.5px;
@@ -1443,7 +1446,7 @@ main .top-row {
 /* ── Insight cards ─────────────────────────────────────────────────────── */
 .insight-row {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr;
   gap: 18px;
 }
 .insight-card {

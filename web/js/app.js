@@ -23,13 +23,9 @@ import {
 import { DEFOREST_COLORS, DEFOREST_CAUSES, FUELS, normalizeFuel } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
 import {
-  EnergyHistogram,
-  CountHistogram,
   CapacityTreemap,
   CorrelationScatter,
-  DeforestHistogram,
   TopDeforestCountries,
-  FuelDeforestProfile,
   FossilGauge,
   RegionalCompass,
   FuelCountryOverlap,
@@ -121,8 +117,6 @@ Promise.all([
     map.on("zoomstart", () => { plantsPane.style.visibility = "hidden"; });
     map.on("zoomend",   () => { if (plantsVisible) plantsPane.style.visibility = ""; });
 
-    const avgCapacityChart = new EnergyHistogram("plot-1", data);
-    const countChart = new CountHistogram("plot-2", data);
     pieChart = new CapacityTreemap("plot-3", data, (fuel) => {
       document.querySelectorAll("#fuel-chips input").forEach((inp) => {
         const checked = fuel === null || inp.value === fuel;
@@ -131,10 +125,7 @@ Promise.all([
       });
       onFilterChange();
     });
-    const deforestDistChart = new DeforestHistogram("plot-5");
-    const plantDistChart = new CountHistogram("plot-6", data);
     const fossilGauge = new FossilGauge("plot-7");
-    const fuelDeforestChart = new FuelDeforestProfile("plot-9", data);
     const iso3ToCountry = new Map(data.filter((d) => d.iso3 && d.country).map((d) => [d.iso3, d.country]));
     const topDeforestChart = new TopDeforestCountries("plot-8", iso3ToCountry);
     const regionCompass = new RegionalCompass("plot-10", data, correlationData);
@@ -179,10 +170,7 @@ Promise.all([
       const country = document.getElementById("country-select").value;
       const [s, n, w, e] = getViewArgs();
       const viewArgs = [s, n, w, e, fuels, country];
-      avgCapacityChart.update(...viewArgs);
-      countChart.update(...viewArgs);
       pieChart.update(...viewArgs);
-      plantDistChart.update(...viewArgs);
       refreshPlantStats();
 
       const visiblePlants = data.filter((d) =>
@@ -193,7 +181,6 @@ Promise.all([
       const deforestByIso3 = getDeforestStatsByCountry(s, n, w, e);
       scatter.update(visiblePlants, deforestByIso3);
       fossilGauge.update(visiblePlants);
-      fuelDeforestChart.update(s, n, w, e, fuels, country, deforestByIso3);
       topDeforestChart.update(deforestByIso3);
       regionCompass.update(visiblePlants, deforestByIso3);
       fuelOverlapChart.update(-90, 90, -180, 180, FUELS, "ALL", getDeforestStatsByCountry(-90, 90, -180, 180));
@@ -218,11 +205,6 @@ Promise.all([
       showDeforestStats(filterByActiveDrivers(getDeforestStats(s, n, w, e)));
     }
 
-    function refreshDeforestDist() {
-      if (!isDeforestVisible()) { deforestDistChart.update(null); return; }
-      deforestDistChart.update(filterByActiveDrivers(getDeforestStats(...getViewArgs())));
-    }
-
     function onFilterChange() {
       const fuels = getActiveFuels();
       const country = document.getElementById("country-select").value;
@@ -238,11 +220,9 @@ Promise.all([
       updateSidePanelVisibility();
       if (e.detail.active) {
         refreshDeforestSidebar();
-        refreshDeforestDist();
         refreshCharts();
       } else {
         hideDeforestStats();
-        deforestDistChart.update(null);
         refreshCharts();
       }
     });
@@ -250,7 +230,6 @@ Promise.all([
     map.on("moveend", () => {
       refreshCharts();
       refreshDeforestSidebar();
-      refreshDeforestDist();
     });
     map.fire("moveend");
 

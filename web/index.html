@@ -418,7 +418,7 @@
       <section class="conclusion-section" data-screen-label="03 Conclusion">
         <div class="conclusion-header">
           <h3 class="conclusion-title">
-            Conclusion Two · What the <em>data</em> tells
+            Conclusion · What the <em>data</em> tells
           </h3>
         </div>
 
@@ -435,27 +435,36 @@
             <p class="axis-body">
               Across every region visible on this map, the dominant fuel mix of
               a country is a poor predictor of its deforestation pressure.
-              Brazil runs on 68 % hydro — and leads the world in forest loss.
-              Indonesia burns 88 % fossil fuels — but the forest dies for palm
+              Brazil runs on 68 % hydro and leads the world in forest loss.
+              Indonesia burns 88 % fossil fuels, but the forest dies for palm
               oil and pulp, not for power plants alone. Siberia loses boreal
               taiga to climate-driven wildfire, not to coal mines next door.
             </p>
             <p class="axis-body">
               The link between fossil fuels and deforestation is
               <em>systemic and global</em>, not local and direct. Carbon
-              emissions warm the climate; warming ignites forests. Industrial
+              emissions warm the climate, warming ignites forests. Industrial
               supply chains that extract coal also open roads into previously
-              inaccessible interiors. The causal chain is real — but it travels
-              through the atmosphere and the economy, not through the nearest
-              fence.
+              inaccessible interiors.
             </p>
             <blockquote class="axis-pullquote">
               "Renewable grids and vanishing forests coexist as often as coal
               grids and intact ones."
             </blockquote>
+            <div class="axis-chart-wrap">
+              <svg
+                id="plot-11"
+                viewBox="0 0 260 110"
+                preserveAspectRatio="xMidYMid meet"
+              ></svg>
+              <div class="chart-hint chart-foot">
+                % of countries with that fuel <em>and</em> deforestation ·
+                global · higher = more co-present
+              </div>
+            </div>
             <p class="axis-body">
-              Policy that targets only power-plant emissions at the local scale
-              will miss the primary drivers: commodity agriculture, road
+              Deforestation isn't just only power-plant emissions at the local
+              scale, it misses the primary drivers: commodity agriculture, road
               penetration, and climate feedbacks. Addressing deforestation
               requires cross-sector governance, not just an energy transition.
             </p>
@@ -524,166 +533,6 @@
               Resilience Centre
             </p>
           </article>
-        </div>
-      </section>
-
-      <!-- ── Narrative insight strip ────────────────────────────────────── -->
-      <section class="insight-row">
-        <div class="insight-card">
-          <div class="insight-num">15%</div>
-          <div class="insight-text">
-            <strong
-              >of plants are coal or oil — yet they generate 62% of global
-              electricity.</strong
-            >
-            <p>
-              This density mismatch means a handful of large thermal plants pull
-              roads, labour, and industrial activity deep into vulnerable
-              landscapes. Use the <em>Fuel</em> filter to isolate coal and see
-              where they concentrate.
-            </p>
-          </div>
-        </div>
-        <div class="insight-card insight-card--wide">
-          <div class="insight-num insight-num--forest">≠</div>
-          <div class="insight-text">
-            <strong>Energy type does not predict deforestation cause.</strong>
-            <p>
-              The chart shows the share of countries in the current view where
-              each fuel type co-exists with deforestation. Renewable fuels —
-              hydro, wind, solar — appear alongside deforestation nearly as
-              often as coal or gas. Brazil's hydro-dominated grid yet
-              world-leading forest loss is the clearest example: the pressure
-              comes from commodity agriculture, not power plants. Use the
-              <em>Deforestation driver</em> filter to isolate the specific cause
-              in each region.
-            </p>
-            <div class="insight-chart-wrap">
-              <svg
-                id="plot-11"
-                viewBox="0 0 260 140"
-                preserveAspectRatio="xMidYMid meet"
-              ></svg>
-              <div class="chart-hint chart-foot">
-                % of countries with that fuel <em>and</em> deforestation ·
-                higher = more co-present
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ── Charts ─────────────────────────────────────────────────────── -->
-      <section class="charts-grid">
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Average capacity</div>
-            <div class="subtitle">By fuel type · current view · MW</div>
-          </div>
-          <svg
-            id="plot-1"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-        </div>
-
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Plant count</div>
-            <div class="subtitle">By fuel type · current view</div>
-          </div>
-          <svg
-            id="plot-2"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-        </div>
-
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Deforestation drivers</div>
-            <div class="subtitle">Pixels by driver · current view</div>
-          </div>
-          <svg
-            id="plot-5"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-        </div>
-
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Plant count distribution</div>
-            <div class="subtitle">By fuel type · current view</div>
-          </div>
-          <svg
-            id="plot-6"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-        </div>
-
-        <div class="chart-card">
-          <div class="head">
-            <div class="chart-title title">Fuel vs. deforestation</div>
-            <div class="subtitle">
-              Avg deforest. pixels per country · by fuel type
-            </div>
-          </div>
-          <svg
-            id="plot-9"
-            viewBox="0 0 260 140"
-            preserveAspectRatio="xMidYMid meet"
-          ></svg>
-          <div class="chart-hint chart-foot">
-            Higher = fuel found in more deforested countries
-          </div>
-        </div>
-
-        <div class="chart-card" id="pb-card">
-          <div class="head">
-            <div class="chart-title title">Planetary Boundaries</div>
-            <div class="subtitle">Global context</div>
-          </div>
-          <p class="pb-intro">
-            The data on this map directly contributes to two of Earth's nine
-            planetary boundaries currently beyond their safe limits.
-          </p>
-          <div class="pb-item">
-            <div class="pb-item-head">
-              <span class="pb-name">Radiative Forcing</span>
-              <span class="pb-badge pb-badge--warn">At risk</span>
-            </div>
-            <div class="pb-bar-track">
-              <div class="pb-bar-fill" style="width: 100%"></div>
-              <div class="pb-bar-limit" style="left: 69%"></div>
-            </div>
-            <div class="pb-note">
-              ~2.9 W/m² observed · safe boundary: 1.0 W/m² — driven by CO₂ from
-              fossil fuels
-            </div>
-          </div>
-          <div class="pb-item">
-            <div class="pb-item-head">
-              <span class="pb-name">Biosphere Integrity (HANPP)</span>
-              <span class="pb-badge pb-badge--exceeded">Exceeded</span>
-            </div>
-            <div class="pb-bar-track">
-              <div
-                class="pb-bar-fill pb-bar-fill--exceeded"
-                style="width: 100%"
-              ></div>
-              <div class="pb-bar-limit" style="left: 25%"></div>
-            </div>
-            <div class="pb-note">
-              &gt;75% HANPP observed · safe boundary: &lt;25% — driven by land
-              use change and deforestation
-            </div>
-          </div>
-          <p class="pb-footer">
-            Source: Stockholm Resilience Centre, 2023. Each power plant and each
-            deforestation pixel visible on this map is a contributor.
-          </p>
         </div>
       </section>
     </main>
