@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=UnifrakturMaguntia&display=swap"
       rel="stylesheet"
     />
     <link
@@ -21,7 +21,6 @@
     />
     <link rel="stylesheet" href="lib/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
-
   </head>
 
   <body>
@@ -35,7 +34,6 @@
     <header class="masthead" data-screen-label="00 Masthead">
       <!-- Legacy nodes kept for any JS hooks -->
       <div class="brand">
-        <span class="brand-mark"></span>
         <span class="brand-name">Deforest <em>Gump</em></span>
       </div>
       <div class="masthead-meta">
@@ -46,23 +44,22 @@
 
       <!-- The visible newspaper masthead -->
       <div class="paper-masthead" aria-hidden="false">
-        <div class="pm-side">
-          Vol.&nbsp;I · No.&nbsp;1<br />
-          <em>The Forest Dispatch</em>
-        </div>
+        <div class="pm-side">Vol.&nbsp;I · No.&nbsp;1<br /></div>
         <h1 class="pm-title">Deforest <em>Gump</em></h1>
         <div class="pm-side right">
           May&nbsp;2026 · EPFL<br />
           <em>COM-480 · Data Visualization</em>
         </div>
-        <div class="pm-tagline" style="grid-column: 1 / -1">
-          <span>A data essay on energy &amp; forests</span>
-          <span class="dot"></span>
-          <span>30 412 power plants</span>
-          <span class="dot"></span>
-          <span>148 countries</span>
-          <span class="dot"></span>
-          <span>500 K+ deforestation pixels</span>
+      </div>
+
+      <div class="byline-strip">
+        <div class="by">
+          <strong
+            >BY&nbsp;SIMON&nbsp;BARRAS,&nbsp;OLIVER&nbsp;DAOUD&nbsp;&amp;&nbsp;PHUC-HUNG&nbsp;TRUONG</strong
+          >
+        </div>
+        <div class="meta">
+          <span>Interactive</span>
         </div>
       </div>
     </header>
@@ -70,53 +67,32 @@
     <!-- ── Hero: Data Story as newspaper article ────────────────────── -->
     <div class="hero-section">
       <article class="article" data-screen-label="01 Data Story">
-        <div class="article-eyebrow">The Story · Front Page</div>
-
         <div class="headline-block">
-          <div class="article-kicker">Energy · Forests · Sustainability</div>
           <h2 class="article-headline">
-            Where energy <em>meets</em> the forest.
+            Fossil energy and <em>forest</em> can cohabited ?
           </h2>
           <p class="article-deck">
-            Three pressures share one map — power, people and trees — and the
-            pattern only reveals itself when you look at all of them at once.
+            People need trees and power plants to survive — How those three
+            share the world?
           </p>
-        </div>
-
-        <div class="byline-strip">
-          <div class="by">
-            <strong
-              >BY&nbsp;SIMON&nbsp;BARRAS,&nbsp;OLIVER&nbsp;DAOUD&nbsp;&amp;&nbsp;PHUC-HUNG&nbsp;TRUONG</strong
-            >
-            <em>· Editorial Desk</em>
-          </div>
-          <div class="meta">
-            <span>Filed May 26, 2026</span>
-            <span class="dot">·</span>
-            <span>7&nbsp;min read</span>
-            <span class="dot">·</span>
-            <span>Interactive</span>
-          </div>
         </div>
 
         <div class="article-body">
           <p class="lead dropcap">
             Sustainability is a complex, multivariate problem. Yet in public
-            debate it is too often reduced to a single number: carbon emissions.
-            That shorthand offers a framework anyone can grasp — and, in the
-            same breath, it obscures everything else that holds the living world
-            together.
+            debate it is too often reduced to a single number aspect: carbon
+            emissions, deforestation, suburbanization, ...
           </p>
           <p>
-            Our objective with this dispatch is to narrow the knowledge gap
+            Our objective with this website is to is to narrow the knowledge gap
             through smart, interactive visualizations. We follow three entangled
             forces — energy production, deforestation, and urbanization — and
             put them in conversation with the sustainability metrics they shape.
           </p>
 
           <blockquote class="pullquote">
-            High&nbsp;deforestation does not always mean
-            high&nbsp;fossil&nbsp;fuels. The map tells a more interesting story.
+            Patterns reveal themselves when you put the data together. They are
+            not obvious when you look at each one separately.
           </blockquote>
 
           <p>
@@ -128,14 +104,6 @@
             policies meant to address them.
           </p>
 
-          <figure class="figure-stub">
-            <div class="figure">[ scatter · fossil share × forest loss ]</div>
-            <figcaption>
-              <b>FIG. 1</b> Each dot a country. Read horizontally for the energy
-              mix, vertically for the canopy.
-            </figcaption>
-          </figure>
-
           <p>
             What follows is an atlas in three field reports, then an interactive
             table on which the reader is invited to draw their own lines. Filter
@@ -146,22 +114,6 @@
             Below, three regions that — together — outline the full shape of the
             problem.
           </p>
-        </div>
-
-        <!-- The headline numbers, set like a paper's box rule -->
-        <div class="article-stats">
-          <div class="stat">
-            <span class="stat-num">30<em>K</em>+</span>
-            <span class="stat-label">Power plants mapped</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">148</span>
-            <span class="stat-label">Countries covered</span>
-          </div>
-          <div class="stat">
-            <span class="stat-num">500<em>K</em>+</span>
-            <span class="stat-label">Deforestation pixels</span>
-          </div>
         </div>
 
         <!-- ── Field reports (formerly story acts) ─────────────────── -->
@@ -253,13 +205,6 @@
             </button>
           </div>
         </section>
-
-        <!-- Scroll cue / transition into the dashboard -->
-        <div class="article-scroll-cue">
-          <span>Below the fold</span>
-          <span class="arrow">↓</span>
-          <span>The interactive atlas</span>
-        </div>
       </article>
     </div>
     <!-- /.hero-section -->
@@ -587,7 +532,6 @@
           </div>
         </div>
 
-
         <div class="chart-card" id="pb-card">
           <div class="head">
             <div class="chart-title title">Planetary Boundaries</div>
@@ -654,6 +598,5 @@
     <script src="lib/leaflet.js"></script>
     <script src="lib/d3.min.js"></script>
     <script type="module" src="js/app.js"></script>
-
   </body>
 </html>
