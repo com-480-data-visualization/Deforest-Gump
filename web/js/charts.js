@@ -1,6 +1,7 @@
 import { FUELS, FUEL_COLORS, normalizeFuel, DEFOREST_COLORS } from "./constants.js";
 
-const T = 350; // shared transition duration (ms)
+const T = 350;
+const GRID_COLOR = "#dde5dd";
 
 /* ── CorrelationScatter ───────────────────────────────────────────────────── */
 
@@ -10,7 +11,6 @@ export class CorrelationScatter {
   constructor(id, correlationData, onCountryClick) {
     this.onCountryClick = onCountryClick;
     this._selectedCountry = "ALL";
-    // ISO3 → pre-computed global deforest count (x-axis stays stable while panning)
     this._deforestByCode = new Map(correlationData.map((d) => [d.code, d.deforest_count]));
 
     this.svg = d3.select("#" + id);
@@ -31,7 +31,7 @@ export class CorrelationScatter {
       gridG.append("line")
         .attr("x1", 0).attr("x2", this.W)
         .attr("y1", this.yS(v)).attr("y2", this.yS(v))
-        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+        .attr("stroke", GRID_COLOR).attr("stroke-width", 0.5);
     });
 
     this._xTickGroup = this.g.append("g");
@@ -65,7 +65,7 @@ export class CorrelationScatter {
 
     const lines = this._xTickGroup.selectAll("line.x-grid").data(ticks);
     lines.enter().append("line").attr("class", "x-grid")
-      .attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
+      .attr("stroke", GRID_COLOR).attr("stroke-width", 0.5)
       .attr("y1", 0).attr("y2", this.H)
       .attr("x1", (d) => this.xS(d)).attr("x2", (d) => this.xS(d))
       .attr("opacity", 0)
@@ -79,8 +79,7 @@ export class CorrelationScatter {
       .attr("y", this.H + 9).attr("text-anchor", "middle")
       .attr("x", (d) => this.xS(d)).attr("opacity", 0)
       .merge(texts).transition(tr)
-      .attr("x", (d) => this.xS(d))
-      .attr("opacity", 1)
+      .attr("x", (d) => this.xS(d)).attr("opacity", 1)
       .text((d) => d3.format("~s")(d));
     texts.exit().transition(tr).attr("opacity", 0).remove();
   }
@@ -113,9 +112,6 @@ export class CorrelationScatter {
       .on("click", (d) => onCountryClick(this._selectedCountry === d.country ? "ALL" : d.country));
   }
 
-  /* Recompute per-country stats from the currently visible plants and redraw.
-     deforestByIso3: Map<iso3,count> from getDeforestStatsByCountry, or null to
-     fall back to the pre-computed global values from correlationData. */
   update(plants, deforestByIso3) {
     const byIso3 = new Map();
     plants.forEach((p) => {
@@ -152,21 +148,15 @@ export class CorrelationScatter {
     const entering = dots.enter().append("circle").attr("class", "dot")
       .attr("r", 0).attr("fill-opacity", 0);
     this._setupDotHandlers(entering);
-
     dots.exit().remove();
 
     const allDots = entering.merge(dots);
-
-    // Set position/color synchronously — never depends on a transition completing,
-    // so filter changes always land at the exact right coordinates immediately.
     allDots
       .attr("cx", (d) => this.xS(d.deforest_count))
       .attr("cy", (d) => this.yS(d.fossil_pct))
       .attr("fill", (d) => FUEL_COLORS[normalizeFuel(d.dominant_fuel)])
       .attr("stroke", (d) => sel !== "ALL" && d.country === sel ? "#1c2e1c" : "#fff")
       .attr("stroke-width", (d) => sel !== "ALL" && d.country === sel ? 1.5 : 0.6);
-
-    // Animate only size and opacity so entering dots fade in smoothly.
     allDots.transition(t)
       .attr("fill-opacity", (d) => sel !== "ALL" && d.country !== sel ? 0.12 : 0.75)
       .attr("r", (d) => {
@@ -177,7 +167,6 @@ export class CorrelationScatter {
 
   _applyDotStyles() {
     const sel = this._selectedCountry;
-    // Named transition avoids cancelling any in-flight update transition.
     this.g.selectAll("circle.dot").transition("style").duration(200)
       .attr("fill-opacity", (d) => sel !== "ALL" && d.country !== sel ? 0.12 : 0.75)
       .attr("r", (d) => {
@@ -194,6 +183,35 @@ export class CorrelationScatter {
   }
 }
 
+/* ── Shared helpers ───────────────────────────────────────────────────────── */
+
+function makePlaceholder(g, W, H) {
+  return g.append("text")
+    .attr("x", W / 2).attr("y", H / 2)
+    .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+    .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
+    .style("font-style", "italic")
+    .text("Enable deforestation overlay");
+}
+
+function updateYGrid(gridGroup, yS, W, t) {
+  const yTicks = yS.ticks(4);
+  const yLines = gridGroup.selectAll("line.y-grid").data(yTicks);
+  yLines.enter().append("line").attr("class", "y-grid")
+    .attr("x1", 0).attr("x2", W).attr("stroke", GRID_COLOR).attr("stroke-width", 0.5)
+    .attr("y1", (d) => yS(d)).attr("y2", (d) => yS(d))
+    .merge(yLines).transition(t).attr("y1", (d) => yS(d)).attr("y2", (d) => yS(d));
+  yLines.exit().remove();
+
+  const yTickTexts = gridGroup.selectAll("text.y-tick").data(yTicks);
+  yTickTexts.enter().append("text").attr("class", "tick y-tick")
+    .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle")
+    .merge(yTickTexts).transition(t)
+    .attr("y", (d) => yS(d))
+    .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
+  yTickTexts.exit().remove();
+}
+
 /* ── BarChart (shared base) ───────────────────────────────────────────────── */
 
 class BarChart {
@@ -205,160 +223,79 @@ class BarChart {
     this.W = vb.width - m.left - m.right;
     this.H = vb.height - m.top - m.bottom;
 
-    this.g = this.svg
-      .append("g")
-      .attr("transform", `translate(${m.left},${m.top})`);
-
-    // Grid group rendered first so it stays behind bars
+    this.g = this.svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
     this.gridGroup = this.g.append("g");
 
     this.xS = d3.scaleBand().domain(FUELS).range([0, this.W]).padding(0.25);
     this.yS = d3.scaleLinear().domain([0, 1]).range([this.H, 0]);
 
-    // X axis label
-    this.svg
-      .append("text")
-      .attr("class", "axis-label")
-      .attr("x", m.left + this.W / 2)
-      .attr("y", m.top + this.H + 38)
-      .attr("text-anchor", "middle")
-      .text("Fuel type");
+    this.svg.append("text").attr("class", "axis-label")
+      .attr("x", m.left + this.W / 2).attr("y", m.top + this.H + 38)
+      .attr("text-anchor", "middle").text("Fuel type");
 
-    // Y axis label
-    this.svg
-      .append("text")
-      .attr("class", "axis-label")
+    this.svg.append("text").attr("class", "axis-label")
       .attr("transform", "rotate(-90)")
-      .attr("x", -(m.top + this.H / 2))
-      .attr("y", 10)
-      .attr("text-anchor", "middle")
-      .text(yLabel);
+      .attr("x", -(m.top + this.H / 2)).attr("y", 10)
+      .attr("text-anchor", "middle").text(yLabel);
 
-    // X tick labels (rotated)
     FUELS.forEach((f) => {
       const cx = this.xS(f) + this.xS.bandwidth() / 2;
-      this.g
-        .append("text")
-        .attr("class", "tick")
-        .attr("x", cx)
-        .attr("y", this.H + 8)
+      this.g.append("text").attr("class", "tick")
+        .attr("x", cx).attr("y", this.H + 8)
         .attr("text-anchor", "end")
         .attr("transform", `rotate(-40, ${cx}, ${this.H + 8})`)
         .text(f);
     });
 
-    // Hover label (hidden until mouseover)
-    this.hoverLabel = this.g
-      .append("text")
-      .attr("class", "bar-label")
-      .attr("text-anchor", "middle")
-      .attr("font-size", "9px")
-      .attr("fill", "#333")
-      .style("pointer-events", "none")
-      .attr("visibility", "hidden");
+    this.hoverLabel = this.g.append("text")
+      .attr("class", "bar-label").attr("text-anchor", "middle")
+      .attr("font-size", "9px").attr("fill", "#333")
+      .style("pointer-events", "none").attr("visibility", "hidden");
   }
 
   _updateYGrid() {
-    const t = d3.transition().duration(T);
-    const yTicks = this.yS.ticks(4);
-
-    const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
-    yLines
-      .enter()
-      .append("line")
-      .attr("class", "y-grid")
-      .attr("x1", 0)
-      .attr("x2", this.W)
-      .attr("stroke", "#dde5dd")
-      .attr("stroke-width", 0.5)
-      .attr("y1", (d) => this.yS(d))
-      .attr("y2", (d) => this.yS(d))
-      .merge(yLines)
-      .transition(t)
-      .attr("y1", (d) => this.yS(d))
-      .attr("y2", (d) => this.yS(d));
-    yLines.exit().remove();
-
-    const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
-    yTickTexts
-      .enter()
-      .append("text")
-      .attr("class", "tick y-tick")
-      .attr("x", -4)
-      .attr("text-anchor", "end")
-      .attr("dominant-baseline", "middle")
-      .merge(yTickTexts)
-      .transition(t)
-      .attr("y", (d) => this.yS(d))
-      .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
-    yTickTexts.exit().remove();
+    updateYGrid(this.gridGroup, this.yS, this.W, d3.transition().duration(T));
   }
 
   _filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     return this.data.filter((d) => {
-      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng)
-        return false;
+      if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng) return false;
       if (activeCountry !== "ALL" && d.country !== activeCountry) return false;
       if (!activeFuels.includes(normalizeFuel(d.fuel))) return false;
       return true;
     });
   }
 
-  // Shared bar update logic used by both subclasses
   _updateBars(barData, activeFuels, formatValue) {
     const { xS, yS, H, hoverLabel } = this;
     const t = d3.transition().duration(T).ease(d3.easeCubicOut);
 
     const bars = this.g.selectAll("rect.bar").data(barData);
-
-    // Enter: bars start collapsed at baseline
-    bars
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr("rx", 3)
-      .attr("ry", 3)
-      .attr("x", (d) => xS(d.fuel))
-      .attr("width", xS.bandwidth())
+    bars.enter().append("rect").attr("class", "bar")
+      .attr("rx", 3).attr("ry", 3)
+      .attr("x", (d) => xS(d.fuel)).attr("width", xS.bandwidth())
       .attr("fill", (d) => FUEL_COLORS[d.fuel])
-      .attr("y", H)
-      .attr("height", 0);
+      .attr("y", H).attr("height", 0);
 
-    // Update + enter: set static attrs and events, then transition geometry
     const merged = this.g.selectAll("rect.bar");
-
     merged
-      .attr("rx", 3)
-      .attr("ry", 3)
-      .attr("x", (d) => xS(d.fuel))
-      .attr("width", xS.bandwidth())
+      .attr("rx", 3).attr("ry", 3)
+      .attr("x", (d) => xS(d.fuel)).attr("width", xS.bandwidth())
       .attr("fill", (d) => FUEL_COLORS[d.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.fuel) ? 0.85 : 0.2))
       .style("cursor", (d) => (d.val > 0 ? "pointer" : "default"))
       .on("mouseover", function (d) {
         if (d.val === 0) return;
-        d3.select(this)
-          .attr("opacity", 1)
-          .attr("stroke", "#fff")
-          .attr("stroke-width", 1.5);
-        hoverLabel
-          .attr("x", xS(d.fuel) + xS.bandwidth() / 2)
-          .attr("y", yS(d.val) - 4)
-          .text(formatValue(d.val))
-          .attr("visibility", "visible");
+        d3.select(this).attr("opacity", 1).attr("stroke", "#fff").attr("stroke-width", 1.5);
+        hoverLabel.attr("x", xS(d.fuel) + xS.bandwidth() / 2)
+          .attr("y", yS(d.val) - 4).text(formatValue(d.val)).attr("visibility", "visible");
       })
       .on("mouseout", function (d) {
-        d3.select(this)
-          .attr("opacity", activeFuels.includes(d.fuel) ? 0.85 : 0.2)
-          .attr("stroke", "none");
+        d3.select(this).attr("opacity", activeFuels.includes(d.fuel) ? 0.85 : 0.2).attr("stroke", "none");
         hoverLabel.attr("visibility", "hidden");
       });
 
-    merged
-      .transition(t)
-      .attr("y", (d) => yS(d.val))
-      .attr("height", (d) => H - yS(d.val));
-
+    merged.transition(t).attr("y", (d) => yS(d.val)).attr("height", (d) => H - yS(d.val));
     bars.exit().remove();
     hoverLabel.raise();
   }
@@ -374,27 +311,15 @@ export class EnergyHistogram extends BarChart {
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
-
-    this._filterData(
-      minLat,
-      maxLat,
-      minLng,
-      maxLng,
-      activeFuels,
-      activeCountry,
-    ).forEach((d) => {
+    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry).forEach((d) => {
       const fuel = normalizeFuel(d.fuel);
       sums[fuel] += d.capacity || 0;
       counts[fuel]++;
     });
-
-    const rawAvg = FUELS.map((f) =>
-      counts[f] === 0 ? 0 : sums[f] / counts[f],
-    );
+    const rawAvg = FUELS.map((f) => counts[f] === 0 ? 0 : sums[f] / counts[f]);
     const mx = Math.max(...rawAvg, 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
     this._updateYGrid();
-
     const barData = FUELS.map((f, i) => ({ fuel: f, val: rawAvg[i] }));
     this._updateBars(barData, activeFuels, (v) => d3.format(",.0f")(v) + " MW");
   }
@@ -409,22 +334,12 @@ export class CountHistogram extends BarChart {
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
-
-    this._filterData(
-      minLat,
-      maxLat,
-      minLng,
-      maxLng,
-      activeFuels,
-      activeCountry,
-    ).forEach((d) => {
+    this._filterData(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry).forEach((d) => {
       counts[normalizeFuel(d.fuel)]++;
     });
-
     const mx = Math.max(...Object.values(counts), 0);
     this.yS.domain([0, mx > 0 ? mx : 1]);
     this._updateYGrid();
-
     const barData = FUELS.map((f) => ({ fuel: f, val: counts[f] }));
     this._updateBars(barData, activeFuels, (v) => d3.format(",")(v));
   }
@@ -472,12 +387,7 @@ export class DeforestHistogram {
       .attr("font-size", "9px").attr("fill", "#333")
       .style("pointer-events", "none").attr("visibility", "hidden");
 
-    this.placeholder = this.g.append("text")
-      .attr("x", this.W / 2).attr("y", this.H / 2)
-      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
-      .style("font-style", "italic")
-      .text("Enable deforestation overlay");
+    this.placeholder = makePlaceholder(this.g, this.W, this.H);
   }
 
   update(counts) {
@@ -493,22 +403,7 @@ export class DeforestHistogram {
 
     const mx = Math.max(...Object.values(counts), 1);
     this.yS.domain([0, mx]);
-
-    const yTicks = this.yS.ticks(4);
-    const yLines = this.gridGroup.selectAll("line.y-grid").data(yTicks);
-    yLines.enter().append("line").attr("class", "y-grid")
-      .attr("x1", 0).attr("x2", this.W).attr("stroke", "#dde5dd").attr("stroke-width", 0.5)
-      .attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d))
-      .merge(yLines).transition(t).attr("y1", (d) => this.yS(d)).attr("y2", (d) => this.yS(d));
-    yLines.exit().remove();
-
-    const yTickTexts = this.gridGroup.selectAll("text.y-tick").data(yTicks);
-    yTickTexts.enter().append("text").attr("class", "tick y-tick")
-      .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle")
-      .merge(yTickTexts).transition(t)
-      .attr("y", (d) => this.yS(d))
-      .text((d) => (d === 0 ? "0" : d3.format("~s")(d)));
-    yTickTexts.exit().remove();
+    updateYGrid(this.gridGroup, this.yS, this.W, t);
 
     const { xS, yS, H, hoverLabel } = this;
     const barData = DRIVERS.map((dr) => ({ driver: dr, val: counts[dr] || 0 }));
@@ -562,7 +457,6 @@ export class CapacityTreemap {
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry) {
     const sums = Object.fromEntries(FUELS.map((f) => [f, 0]));
-
     this.data.forEach((d) => {
       if (d.lat < minLat || d.lat > maxLat || d.lng < minLng || d.lng > maxLng) return;
       if (activeCountry !== "ALL" && d.country !== activeCountry) return;
@@ -576,30 +470,21 @@ export class CapacityTreemap {
       total > 0 ? d3.format(",.0f")(total) + " MW" : "—";
 
     const hoverEl = document.getElementById("treemap-label");
-
     const root = d3
       .hierarchy({ children: FUELS.map((f) => ({ fuel: f, value: sums[f] })) })
       .sum((d) => d.value || 0);
     this.layout(root);
 
     const t = d3.transition().duration(T);
-    const cells = this.svg
-      .selectAll("g.tm-cell")
-      .data(root.leaves(), (d) => d.data.fuel);
+    const cells = this.svg.selectAll("g.tm-cell").data(root.leaves(), (d) => d.data.fuel);
 
     const entering = cells.enter().append("g").attr("class", "tm-cell");
     entering.append("rect").attr("rx", 2).attr("ry", 2);
-    entering
-      .append("text")
-      .attr("class", "tm-label")
-      .attr("pointer-events", "none")
-      .attr("fill", "#fff")
-      .attr("font-weight", "600");
+    entering.append("text").attr("class", "tm-label")
+      .attr("pointer-events", "none").attr("fill", "#fff").attr("font-weight", "600");
 
     const merged = entering.merge(cells);
-
-    merged
-      .select("rect")
+    merged.select("rect")
       .attr("fill", (d) => FUEL_COLORS[d.data.fuel])
       .attr("opacity", (d) => (activeFuels.includes(d.data.fuel) ? 0.85 : 0.2))
       .attr("stroke", (d) => d.data.fuel === this._selectedFuel ? "#fff" : "none")
@@ -622,23 +507,14 @@ export class CapacityTreemap {
         this._onFuelFilter(newFuel);
       });
 
-    merged
-      .transition(t)
-      .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
-
-    merged
-      .select("rect")
-      .transition(t)
+    merged.transition(t).attr("transform", (d) => `translate(${d.x0},${d.y0})`);
+    merged.select("rect").transition(t)
       .attr("width", (d) => Math.max(0, d.x1 - d.x0))
       .attr("height", (d) => Math.max(0, d.y1 - d.y0));
-
-    merged
-      .select("text.tm-label")
+    merged.select("text.tm-label")
       .text((d) => (d.x1 - d.x0 > 30 && d.y1 - d.y0 > 13 ? d.data.fuel : ""))
       .attr("font-size", (d) => (d.x1 - d.x0 > 48 ? "7px" : "6px"))
-      .transition(t)
-      .attr("x", 4)
-      .attr("y", (d) => Math.min(11, (d.y1 - d.y0) * 0.65));
+      .transition(t).attr("x", 4).attr("y", (d) => Math.min(11, (d.y1 - d.y0) * 0.65));
 
     cells.exit().remove();
   }
@@ -649,13 +525,7 @@ export class CapacityTreemap {
 export class FuelDeforestProfile extends BarChart {
   constructor(id, data) {
     super(id, data, { leftMargin: 42, yLabel: "Avg deforest. px" });
-
-    this.placeholder = this.g.append("text")
-      .attr("x", this.W / 2).attr("y", this.H / 2)
-      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
-      .style("font-style", "italic")
-      .text("Enable deforestation overlay");
+    this.placeholder = makePlaceholder(this.g, this.W, this.H);
   }
 
   update(minLat, maxLat, minLng, maxLng, activeFuels, activeCountry, deforestByIso3) {
@@ -681,7 +551,6 @@ export class FuelDeforestProfile extends BarChart {
     const mx = Math.max(...Object.values(avgByFuel), 1);
     this.yS.domain([0, mx]);
     this._updateYGrid();
-
     const barData = FUELS.map((f) => ({ fuel: f, val: avgByFuel[f] }));
     this._updateBars(barData, activeFuels, (v) => d3.format(",d")(v) + " px");
   }
@@ -691,7 +560,6 @@ export class FuelDeforestProfile extends BarChart {
 
 export class TopDeforestCountries {
   constructor(id, iso3ToCountry) {
-    // iso3ToCountry: Map<iso3, countryName>
     this._iso3ToCountry = iso3ToCountry;
 
     this.svg = d3.select("#" + id);
@@ -705,12 +573,7 @@ export class TopDeforestCountries {
     this.xS = d3.scaleLinear().domain([0, 1]).range([0, this.W]);
     this.yS = d3.scaleBand().domain([0,1,2,3,4]).range([0, this.H]).padding(0.25);
 
-    this.placeholder = this.g.append("text")
-      .attr("x", this.W / 2).attr("y", this.H / 2)
-      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
-      .style("font-style", "italic")
-      .text("Enable deforestation overlay");
+    this.placeholder = makePlaceholder(this.g, this.W, this.H);
   }
 
   update(deforestByIso3) {
@@ -723,8 +586,6 @@ export class TopDeforestCountries {
       return;
     }
 
-    // Top 5 by count — rank stored in datum so position callbacks use d.rank,
-    // not the selection index i (which reflects DOM order, not sorted rank).
     const top5 = [...deforestByIso3.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
@@ -739,7 +600,6 @@ export class TopDeforestCountries {
     this.xS.domain([0, maxCount]);
     this.yS.domain(top5.map((_, i) => i));
 
-    // Bars
     const bars = this.g.selectAll("rect.top-bar").data(top5, (d) => d.iso3);
     bars.enter().append("rect").attr("class", "top-bar")
       .attr("rx", 3).attr("ry", 3)
@@ -747,14 +607,11 @@ export class TopDeforestCountries {
       .attr("width", 0).attr("fill", "var(--forest)").attr("opacity", 0.75);
 
     this.g.selectAll("rect.top-bar").transition(t)
-      .attr("y", (d) => this.yS(d.rank))
-      .attr("height", this.yS.bandwidth())
-      .attr("width", (d) => this.xS(d.count))
-      .attr("fill", "var(--forest)");
+      .attr("y", (d) => this.yS(d.rank)).attr("height", this.yS.bandwidth())
+      .attr("width", (d) => this.xS(d.count)).attr("fill", "var(--forest)");
 
     bars.exit().transition(t).attr("width", 0).remove();
 
-    // Country name labels (left of bar)
     const names = this.g.selectAll("text.top-name").data(top5, (d) => d.iso3);
     names.enter().append("text").attr("class", "tick top-name")
       .attr("x", -4).attr("text-anchor", "end").attr("dominant-baseline", "middle");
@@ -763,7 +620,6 @@ export class TopDeforestCountries {
       .text((d) => d.name);
     names.exit().remove();
 
-    // Count labels (right of bar)
     const labels = this.g.selectAll("text.top-val").data(top5, (d) => d.iso3);
     labels.enter().append("text").attr("class", "tick top-val")
       .attr("x", 0).attr("dominant-baseline", "middle");
@@ -775,12 +631,10 @@ export class TopDeforestCountries {
   }
 }
 
-/* ── FossilGauge ──────────────────────────────────────────────────────────── */
+/* ── Gauge (shared base for FossilGauge and DeforestGauge) ───────────────── */
 
-const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
-
-export class FossilGauge {
-  constructor(id) {
+class Gauge {
+  constructor(id, gradId) {
     const svg = d3.select("#" + id);
     const vb = svg.node().viewBox.baseVal;
     const cx = vb.width / 2;
@@ -789,80 +643,68 @@ export class FossilGauge {
 
     this._cx = cx;
     this._cy = cy;
-    this._R = R;
-    this._needleG = null;
-    this._label = null;
-    this._fossilPct = 0;
 
     const g = svg.append("g");
 
-    // Gradient arc: green → orange → red
-    const arcColors = [
+    const defs = svg.append("defs");
+    const grad = defs.append("linearGradient").attr("id", gradId)
+      .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
+    [
       { offset: "0%", color: "#4caf50" },
       { offset: "50%", color: "#ff9800" },
       { offset: "100%", color: "#f44336" },
-    ];
-    const defs = svg.append("defs");
-    const gradId = "fossil-grad-" + id;
-    const grad = defs.append("linearGradient").attr("id", gradId)
-      .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
-    arcColors.forEach((c) => grad.append("stop").attr("offset", c.offset).attr("stop-color", c.color));
+    ].forEach((c) => grad.append("stop").attr("offset", c.offset).attr("stop-color", c.color));
 
-    // Arc generator for the gauge track
     const arc = d3.arc()
-      .innerRadius(R - 14)
-      .outerRadius(R)
-      .startAngle(-Math.PI / 2)
-      .endAngle(Math.PI / 2);
+      .innerRadius(R - 14).outerRadius(R)
+      .startAngle(-Math.PI / 2).endAngle(Math.PI / 2);
 
-    g.append("path")
-      .attr("d", arc())
+    g.append("path").attr("d", arc())
       .attr("transform", `translate(${cx},${cy})`)
-      .attr("fill", `url(#${gradId})`)
-      .attr("opacity", 0.85);
+      .attr("fill", `url(#${gradId})`).attr("opacity", 0.85);
 
-    // Global avg tick at 50% (π/2 - π*0.5 = 0 rad from top = right of half arc)
-    // The half-arc goes from -90° (left, 0%) to +90° (right, 100%)
-    // 50% position: angle = 0 (straight up from center, so bottom of half-arc)
-    // Let's mark 50% position:
-    const avgAngle = 0; // 50% = middle of arc = pointing straight down
-    const tickR = R + 4;
-    const tx = cx + tickR * Math.sin(avgAngle);
-    const ty = cy - tickR * Math.cos(avgAngle);
+    // Midpoint tick at 50% (angle 0 → straight up from arc center)
     g.append("line")
-      .attr("x1", cx + (R - 14) * Math.sin(avgAngle))
-      .attr("y1", cy - (R - 14) * Math.cos(avgAngle))
-      .attr("x2", cx + R * Math.sin(avgAngle))
-      .attr("y2", cy - R * Math.cos(avgAngle))
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 1.5);
-
+      .attr("x1", cx).attr("y1", cy - (R - 14))
+      .attr("x2", cx).attr("y2", cy - R)
+      .attr("stroke", "#fff").attr("stroke-width", 1.5);
     g.append("text")
-      .attr("x", tx).attr("y", ty - 3)
+      .attr("x", cx).attr("y", cy - R - 7)
       .attr("text-anchor", "middle").attr("font-size", "7px")
       .attr("fill", "var(--ink-3)").text("avg");
 
-    // Axis labels
     g.append("text").attr("x", cx - R - 2).attr("y", cy + 2)
       .attr("text-anchor", "end").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("0%");
     g.append("text").attr("x", cx + R + 2).attr("y", cy + 2)
       .attr("text-anchor", "start").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("100%");
 
-    // Needle group
     this._needleG = g.append("g").attr("transform", `translate(${cx},${cy}) rotate(0)`);
     this._needleG.append("line")
-      .attr("x1", 0).attr("y1", 0)
-      .attr("x2", -(R - 6)).attr("y2", 0)
-      .attr("stroke", "var(--ink)").attr("stroke-width", 2)
-      .attr("stroke-linecap", "round");
+      .attr("x1", 0).attr("y1", 0).attr("x2", -(R - 6)).attr("y2", 0)
+      .attr("stroke", "var(--ink)").attr("stroke-width", 2).attr("stroke-linecap", "round");
     this._needleG.append("circle").attr("r", 4).attr("fill", "var(--ink)");
 
-    // Value label
     this._label = g.append("text")
       .attr("x", cx).attr("y", cy - 12)
       .attr("text-anchor", "middle").attr("font-size", "14px")
-      .attr("font-weight", "600").attr("fill", "var(--ink)")
-      .text("—");
+      .attr("font-weight", "600").attr("fill", "var(--ink)").text("—");
+  }
+
+  _setAngle(pct) {
+    this._needleG.transition().duration(T).ease(d3.easeCubicOut)
+      .attr("transform", `translate(${this._cx},${this._cy}) rotate(${(pct ?? 0) * 180})`);
+    this._label.text(pct != null ? (pct * 100).toFixed(1) + "%" : "—");
+  }
+}
+
+/* ── FossilGauge ──────────────────────────────────────────────────────────── */
+
+const FOSSIL_FUELS = new Set(["Coal", "Gas", "Oil", "Petcoke"]);
+
+export class FossilGauge extends Gauge {
+  constructor(id) {
+    super(id, "fossil-grad-" + id);
+    this._fossilPct = 0;
   }
 
   update(visiblePlants) {
@@ -872,14 +714,9 @@ export class FossilGauge {
       total += cap;
       if (FOSSIL_FUELS.has(p.fuel)) fossil += cap;
     });
-    const pct = total > 0 ? fossil / total : 0;
-    this._fossilPct = pct;
-
-    // Needle: 0deg = 0% (left/9 o'clock), 180deg = 100% (right/3 o'clock)
-    const angle = pct * 180;
-    this._needleG.transition().duration(T).ease(d3.easeCubicOut)
-      .attr("transform", `translate(${this._cx},${this._cy}) rotate(${angle})`);
-    this._label.text(total > 0 ? (pct * 100).toFixed(1) + "%" : "—");
+    const pct = total > 0 ? fossil / total : null;
+    this._fossilPct = pct ?? 0;
+    this._setAngle(pct);
   }
 }
 
@@ -887,80 +724,9 @@ export class FossilGauge {
 
 const DEFINITIVE_DRIVERS = new Set([1, 2, 5]);
 
-export class DeforestGauge {
+export class DeforestGauge extends Gauge {
   constructor(id) {
-    const svg = d3.select("#" + id);
-    const vb = svg.node().viewBox.baseVal;
-    const cx = vb.width / 2;
-    const cy = vb.height - 18;
-    const R = Math.min(cx, cy) - 10;
-
-    this._cx = cx;
-    this._cy = cy;
-    this._R = R;
-    this._needleG = null;
-    this._label = null;
-
-    const g = svg.append("g");
-
-    const arcColors = [
-      { offset: "0%", color: "#4caf50" },
-      { offset: "50%", color: "#ff9800" },
-      { offset: "100%", color: "#f44336" },
-    ];
-    const defs = svg.append("defs");
-    const gradId = "deforest-grad-" + id;
-    const grad = defs.append("linearGradient").attr("id", gradId)
-      .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "0%");
-    arcColors.forEach((c) => grad.append("stop").attr("offset", c.offset).attr("stop-color", c.color));
-
-    const arc = d3.arc()
-      .innerRadius(R - 14)
-      .outerRadius(R)
-      .startAngle(-Math.PI / 2)
-      .endAngle(Math.PI / 2);
-
-    g.append("path")
-      .attr("d", arc())
-      .attr("transform", `translate(${cx},${cy})`)
-      .attr("fill", `url(#${gradId})`)
-      .attr("opacity", 0.85);
-
-    const avgAngle = 0;
-    const tickR = R + 4;
-    const tx = cx + tickR * Math.sin(avgAngle);
-    const ty = cy - tickR * Math.cos(avgAngle);
-    g.append("line")
-      .attr("x1", cx + (R - 14) * Math.sin(avgAngle))
-      .attr("y1", cy - (R - 14) * Math.cos(avgAngle))
-      .attr("x2", cx + R * Math.sin(avgAngle))
-      .attr("y2", cy - R * Math.cos(avgAngle))
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 1.5);
-
-    g.append("text")
-      .attr("x", tx).attr("y", ty - 3)
-      .attr("text-anchor", "middle").attr("font-size", "7px")
-      .attr("fill", "var(--ink-3)").text("avg");
-
-    g.append("text").attr("x", cx - R - 2).attr("y", cy + 2)
-      .attr("text-anchor", "end").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("0%");
-    g.append("text").attr("x", cx + R + 2).attr("y", cy + 2)
-      .attr("text-anchor", "start").attr("font-size", "8px").attr("fill", "var(--ink-3)").text("100%");
-
-    this._needleG = g.append("g").attr("transform", `translate(${cx},${cy}) rotate(0)`);
-    this._needleG.append("line")
-      .attr("x1", 0).attr("y1", 0)
-      .attr("x2", -(R - 6)).attr("y2", 0)
-      .attr("stroke", "var(--ink)").attr("stroke-width", 2)
-      .attr("stroke-linecap", "round");
-    this._needleG.append("circle").attr("r", 4).attr("fill", "var(--ink)");
-
-    this._label = g.append("text")
-      .attr("x", cx).attr("y", cy - 12)
-      .attr("text-anchor", "middle").attr("font-size", "14px")
-      .attr("font-weight", "600").attr("fill", "var(--ink)")
-      .text("—");
+    super(id, "deforest-grad-" + id);
   }
 
   update(counts) {
@@ -969,11 +735,7 @@ export class DeforestGauge {
       total += count;
       if (DEFINITIVE_DRIVERS.has(+driver)) definitive += count;
     });
-    const pct = total > 0 ? definitive / total : 0;
-    const angle = pct * 180;
-    this._needleG.transition().duration(T).ease(d3.easeCubicOut)
-      .attr("transform", `translate(${this._cx},${this._cy}) rotate(${angle})`);
-    this._label.text(total > 0 ? (pct * 100).toFixed(1) + "%" : "—");
+    this._setAngle(total > 0 ? definitive / total : null);
   }
 }
 
@@ -1004,20 +766,14 @@ export class ConclusionScatter {
       gridG.append("line")
         .attr("x1", 0).attr("x2", this.W)
         .attr("y1", this.yS(v)).attr("y2", this.yS(v))
-        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+        .attr("stroke", GRID_COLOR).attr("stroke-width", 0.5);
       gridG.append("line")
         .attr("x1", this.xS(v)).attr("x2", this.xS(v))
         .attr("y1", 0).attr("y2", this.H)
-        .attr("stroke", "#dde5dd").attr("stroke-width", 0.5);
+        .attr("stroke", GRID_COLOR).attr("stroke-width", 0.5);
     });
 
-
-    this.placeholder = this.g.append("text")
-      .attr("x", this.W / 2).attr("y", this.H / 2)
-      .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
-      .attr("font-size", "9.5px").attr("fill", "var(--ink-4)")
-      .style("font-style", "italic")
-      .text("Enable deforestation overlay");
+    this.placeholder = makePlaceholder(this.g, this.W, this.H);
 
     this.hoverLabel = svg.append("text")
       .attr("class", "scatter-label").attr("font-size", "7px")

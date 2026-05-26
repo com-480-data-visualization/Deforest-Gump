@@ -15,10 +15,6 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=UnifrakturMaguntia&display=swap"
       rel="stylesheet"
     />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
     <link rel="stylesheet" href="lib/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
@@ -31,17 +27,7 @@
     </div>
 
     <!-- ── Newspaper Masthead ────────────────────────────────────────── -->
-    <header class="masthead" data-screen-label="00 Masthead">
-      <!-- Legacy nodes kept for any JS hooks -->
-      <div class="brand">
-        <span class="brand-name">Deforest <em>Gump</em></span>
-      </div>
-      <div class="masthead-meta">
-        <span>EPFL · COM-480</span>
-        <span class="meta-dot"></span>
-        <span>2026</span>
-      </div>
-
+    <header class="masthead">
       <!-- The visible newspaper masthead -->
       <div class="paper-masthead" aria-hidden="false">
         <div class="pm-side">Vol.&nbsp;I · No.&nbsp;1<br /></div>
@@ -66,7 +52,7 @@
 
     <!-- ── Hero: Data Story as newspaper article ────────────────────── -->
     <div class="hero-section">
-      <article class="article" data-screen-label="01 Data Story">
+      <article class="article">
         <div class="headline-block">
           <h2 class="article-headline">
             Can fossil energy and <em>forest</em> cohabit ?
@@ -101,8 +87,8 @@
           </p>
         </div>
 
-        <!-- ── Field reports (formerly story acts) ─────────────────── -->
-        <section class="dispatches" data-screen-label="02 Field Reports">
+        <!-- ── Field reports ─────────────────────────────────────── -->
+        <section class="dispatches">
           <div class="dispatches-head">
             <h3>Three regions, three <em>different</em> stories</h3>
             <span class="hint">Tap a column to fly the map there →</span>
@@ -418,7 +404,7 @@
       </section>
 
       <!-- ── Conclusion ───────────────────────────────────────────────────── -->
-      <section class="conclusion-section" data-screen-label="03 Conclusion">
+      <section class="conclusion-section">
         <div class="conclusion-header">
           <h3 class="conclusion-title">
             Conclusion · What the <em>data</em> tells
@@ -562,8 +548,6 @@
       </div>
     </footer>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
     <script src="lib/leaflet.js"></script>
     <script src="lib/d3.min.js"></script>
     <script type="module" src="js/app.js"></script>
