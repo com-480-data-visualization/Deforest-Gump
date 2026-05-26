@@ -80,46 +80,31 @@
         <div class="article-body">
           <p class="lead dropcap">
             Sustainability is a complex, multivariate problem. Yet in public
-            debate it is too often reduced to a single number aspect: carbon
-            emissions, deforestation, suburbanization, ...
+            debate it is too often reduced to a single number: carbon emissions,
+            deforestation, suburbanization. Each metric tells part of the story
+            — none tells all of it.
           </p>
           <p>
-            Our objective with this website is to is to narrow the knowledge gap
-            through smart, interactive visualizations. We follow three entangled
-            forces — energy production, deforestation, and urbanization — and
-            put them in conversation with the sustainability metrics they shape.
+            We explore three forces that can shape the outcome — energy,
+            forests, people. This website puts them together on the same map.
           </p>
 
           <blockquote class="pullquote">
-            Patterns reveal themselves when you put the data together. They are
-            not obvious when you look at each one separately.
+            Patterns reveal themselves when you put the data together.
           </blockquote>
 
           <p>
-            Across 148 countries, the data reveals patterns that no single
-            indicator can capture alone. A coal-heavy grid does not always sit
-            on cleared land; a hydro-dominated grid does not always protect it.
-            The geography of energy and the geography of forest loss overlap in
-            places, diverge in others — and the difference matters for the
-            policies meant to address them.
-          </p>
-
-          <p>
-            What follows is an atlas in three field reports, then an interactive
-            table on which the reader is invited to draw their own lines. Filter
-            by fuel, overlay deforestation, zoom into a basin. The data is the
-            same on every screen; the questions you bring to it are not.
-          </p>
-          <p>
-            Below, three regions that — together — outline the full shape of the
-            problem.
+            Across 148 countries, a coal-heavy grid does not always sit on
+            deforested land; a hydro-dominated grid does not always protect
+            trees. Energy mix and forest loss overlap in some places, diverge in
+            others — and that difference is what policy must address.
           </p>
         </div>
 
         <!-- ── Field reports (formerly story acts) ─────────────────── -->
         <section class="dispatches" data-screen-label="02 Field Reports">
           <div class="dispatches-head">
-            <h3>Three regions, three <em>field reports</em></h3>
+            <h3>Three regions, three <em>different</em> stories</h3>
             <span class="hint">Tap a column to fly the map there →</span>
           </div>
 
@@ -129,19 +114,21 @@
               data-lat="-5"
               data-lng="-55"
               data-zoom="5"
+              data-country="Brazil"
             >
               <div class="dispatch-roman"><em>I.</em></div>
               <div class="dispatch-tag">Dispatch · South America</div>
               <h4 class="dispatch-title act-title">The Amazon Basin</h4>
               <div class="dispatch-dateline">
-                <strong>Brazil</strong> · 15% fossil share · dominant fuel:
-                Hydro
+                <strong>Brazil</strong> · 13.4% fossil share · Deforestation
+                driver: Commodity-driven and shifting agriculture
               </div>
               <p class="dispatch-desc act-desc">
-                Commodity-driven deforestation dominates — not energy. Brazil's
-                grid runs mostly on hydropower, yet the Amazon loses millions of
-                hectares each year to soy farms and cattle ranching. High
-                deforestation ≠ high fossil fuels.
+                This is the clearest example of agriculture pressure dominating.
+                Brazil's grid runs mostly on hydropower, however, the Amazon
+                loses millions of hectares each year to soy farms and cattle
+                ranching. Most of the deforestation occurs far from populated
+                areas. High deforestation ≠ high fossil fuels.
               </p>
               <p class="dispatch-source act-source">
                 <em>Sources:</em> INPE PRODES (2023) · Gibbs et al.,
@@ -152,29 +139,32 @@
 
             <button
               class="dispatch act-card"
-              data-lat="0"
-              data-lng="115"
-              data-zoom="5"
+              data-lat="62"
+              data-lng="120"
+              data-zoom="4"
+              data-country="Russia"
+              data-overlays="deforest"
             >
               <div class="dispatch-roman"><em>II.</em></div>
-              <div class="dispatch-tag">Dispatch · Southeast Asia</div>
-              <h4 class="dispatch-title act-title">
-                Borneo &amp; the Coal Belt
-              </h4>
+              <div class="dispatch-tag">Dispatch · Eastern Russia</div>
+              <h4 class="dispatch-title act-title">Siberia in Flames</h4>
               <div class="dispatch-dateline">
-                <strong>Indonesia</strong> · 88% fossil share · dominant fuel:
-                Coal
+                <strong>Russia · Yakutia</strong> · Deforestation driver:
+                Wildfire
               </div>
               <p class="dispatch-desc act-desc">
-                Here the two pressures converge. Coal power fuels rapid
-                industrialisation while palm oil expansion and logging clear one
-                of the planet's most biodiverse forests. The highest fossil
-                share meets significant deforestation.
+                The boreal taiga of eastern Siberia is the world's largest
+                forest — and it is burning at a record pace. Climate-amplified
+                wildfires in Yakutia and the Sakha Republic scorch millions of
+                hectares annually, releasing centuries of stored carbon and
+                thawing permafrost. This is deforestation without a chainsaw:
+                fire as the driver, warming as the cause.
               </p>
               <p class="dispatch-source act-source">
-                <em>Sources:</em> Hansen et al., <em>Science</em> 2013 · Vijay
-                et al., <em>PLOS&nbsp;ONE</em> 2016 · IEA World Energy
-                Statistics 2022
+                <em>Sources:</em> Sofronov &amp; Vakurov,
+                <em>IOP&nbsp;Environ.&nbsp;Res.&nbsp;Lett.</em> 2020 ·
+                Kukavskaya et al., <em>Fire&nbsp;Ecology · Springer</em> 2024 ·
+                Global Forest Watch
               </p>
               <span class="dispatch-cta">Read on the map →</span>
             </button>
@@ -182,24 +172,30 @@
             <button
               class="dispatch act-card"
               data-lat="0"
-              data-lng="25"
+              data-lng="115"
               data-zoom="5"
+              data-country="Indonesia"
+              data-overlays="plants,deforest"
             >
               <div class="dispatch-roman"><em>III.</em></div>
-              <div class="dispatch-tag">Dispatch · Central Africa</div>
-              <h4 class="dispatch-title act-title">The Congo Basin</h4>
+              <div class="dispatch-tag">Dispatch · Southeast Asia</div>
+              <h4 class="dispatch-title act-title">Borneo for Business</h4>
               <div class="dispatch-dateline">
-                <strong>DRC</strong> · 1% fossil share · dominant fuel: Hydro
+                <strong>Indonesia · Kalimantan</strong> · 87.9% fossil share ·
+                Deforestation driver: Commodity-driven
               </div>
               <p class="dispatch-desc act-desc">
-                Massive deforestation despite almost zero fossil-fuel
-                infrastructure. Shifting agriculture and subsistence farming
-                drive forest loss here — a stark reminder that energy mix alone
-                cannot explain deforestation pressure.
+                Here the chainsaw follows the coal plant. Indonesia's grid runs
+                on coal — and its forests fall for palm oil, pulp, and paper
+                concessions. Kalimantan loses hundreds of thousands of hectares
+                a year to legally-sanctioned clearing: corporations, not
+                subsistence farmers, hold the licenses. High fossil fuels
+                <em>and</em> high commodity deforestation — the two pressures
+                reinforce each other.
               </p>
               <p class="dispatch-source act-source">
-                <em>Sources:</em> OFAC Congo Basin Report 2022 · Tyukavina et
-                al., <em>Sci.&nbsp;Advances</em> 2018 · SE4All Africa Hub
+                <em>Sources:</em> Gaveau et al., <em>Nat.&nbsp;Commun.</em> 2023
+                · Global Forest Watch · IEA Indonesia Energy Profile 2023
               </p>
               <span class="dispatch-cta">Read on the map →</span>
             </button>

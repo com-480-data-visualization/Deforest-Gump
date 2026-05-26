@@ -47,7 +47,9 @@ buildDeforestToggle(map);
 buildPopulationToggle(map);
 document.getElementById("deforest-toggle").click();
 
-const renderer = L.canvas({ padding: 0.5 });
+const plantsPane = map.createPane("plantsPane");
+plantsPane.style.zIndex = "410";
+const renderer = L.canvas({ padding: 0.5, pane: "plantsPane" });
 
 showLoading();
 
@@ -98,6 +100,10 @@ Promise.all([
         map.removeLayer(plantsGroup);
       }
     });
+
+    map.on("zoomstart", () => { plantsPane.style.visibility = "hidden"; });
+    map.on("zoomend",   () => { if (plantsVisible) plantsPane.style.visibility = ""; });
+
     const avgCapacityChart = new EnergyHistogram("plot-1", data);
     const countChart = new CountHistogram("plot-2", data);
     pieChart = new CapacityTreemap("plot-3", data, (fuel) => {
@@ -230,6 +236,61 @@ Promise.all([
     });
     map.fire("moveend");
 
+    function wireGuidedViews() {
+      document.querySelectorAll(".act-card[data-lat]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const lat = +btn.dataset.lat;
+          const lng = +btn.dataset.lng;
+          const zoom = +btn.dataset.zoom;
+
+          // Select all fuel types
+          document.querySelectorAll("#fuel-chips input").forEach((inp) => {
+            if (!inp.checked) {
+              inp.checked = true;
+              inp.closest(".fuel-chip").classList.add("checked");
+            }
+          });
+
+          // Select all deforestation drivers
+          const allDrivers = [];
+          document.querySelectorAll("#driver-chips input").forEach((inp) => {
+            if (!inp.checked) {
+              inp.checked = true;
+              inp.closest(".driver-chip").classList.add("checked");
+            }
+            allDrivers.push(+inp.value);
+          });
+          setDeforestDriverFilter(allDrivers);
+
+          // Set country filter (use data-country if specified, else ALL)
+          const country = btn.dataset.country || "ALL";
+          document.getElementById("country-select").value = country;
+          onFilterChange();
+
+          // Activate the correct overlays before flying
+          const overlays = btn.dataset.overlays ? btn.dataset.overlays.split(",").map((s) => s.trim()) : ["plants", "deforest", "population"];
+
+          const wantPlants = overlays.includes("plants");
+          if (wantPlants && !plantsVisible) plantsBtn.click();
+          if (!wantPlants && plantsVisible) plantsBtn.click();
+
+          const deforestBtn = document.getElementById("deforest-toggle");
+          const wantDeforest = overlays.includes("deforest");
+          if (wantDeforest && !deforestBtn.classList.contains("active")) deforestBtn.click();
+          if (!wantDeforest && deforestBtn.classList.contains("active")) deforestBtn.click();
+
+          const populationBtn = document.getElementById("population-toggle");
+          const wantPop = overlays.includes("population");
+          if (wantPop && !populationBtn.classList.contains("active")) populationBtn.click();
+          if (!wantPop && populationBtn.classList.contains("active")) populationBtn.click();
+
+          // Scroll to map and fly simultaneously
+          document.querySelector(".top-row").scrollIntoView({ behavior: "smooth" });
+          map.flyTo([lat, lng], zoom, { duration: 1.5 });
+        });
+      });
+    }
+
     wireGuidedViews();
   })
   .catch(() => hideLoading());
@@ -271,24 +332,5 @@ function buildPopSlider() {
     label.textContent = val === 0 ? "All" : `≥ ${val}%`;
     bar.style.setProperty("--filter-pct", val + "%");
     setPopulationThreshold(val / 100);
-  });
-}
-
-/* ── Guided view buttons ────────────────────────────────────────────────── */
-
-function wireGuidedViews() {
-  document.querySelectorAll(".act-card[data-lat]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const lat = +btn.dataset.lat;
-      const lng = +btn.dataset.lng;
-      const zoom = +btn.dataset.zoom;
-      map.flyTo([lat, lng], zoom, { duration: 1.5 });
-
-      /* Auto-enable deforestation overlay for context */
-      const deforestBtn = document.getElementById("deforest-toggle");
-      if (!deforestBtn.classList.contains("active")) {
-        deforestBtn.click();
-      }
-    });
   });
 }
