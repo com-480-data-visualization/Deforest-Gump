@@ -259,21 +259,10 @@ let populationLayer = null;
 let populationVisible = false;
 let populationGeoJSON = null; // cached so re-toggle skips re-fetch
 let populationThreshold = 0; // norm value [0,1] — hide points below this
-let populationCountryIso3 = null; // ISO alpha-3 string or null for no filter
-
 
 export function setPopulationThreshold(t) {
   populationThreshold = t;
   if (populationLayer) populationLayer.redraw();
-}
-
-export function setPopulationCountryFilter(iso3) {
-  populationCountryIso3 = iso3;
-
-  if (!populationVisible || !populationLayer) return;
-
-  // just trigger a visual refresh
-  populationLayer.redraw();
 }
 
 const popColorScale = d3.scaleSequential()
@@ -322,7 +311,6 @@ class PopHeatmapLayer extends CanvasOverlayLayer {
     for (const p of this._pts) {
       if (p.lat < s || p.lat > n || p.lng < we || p.lng > e) continue;
       if (p.norm < populationThreshold) continue;
-      if (populationCountryIso3 && p.cc3 !== populationCountryIso3) continue;
 
       const nwPt = map.latLngToLayerPoint([p.lat + this._halfLat, p.lng - this._halfLng]);
       const sePt = map.latLngToLayerPoint([p.lat - this._halfLat, p.lng + this._halfLng]);

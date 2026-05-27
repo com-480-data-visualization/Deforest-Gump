@@ -19,7 +19,6 @@ import {
   setDeforestDriverFilter,
   setDeforestCountryFilter,
   setPopulationThreshold,
-  setPopulationCountryFilter,
 } from "./overlays.js";
 import { DEFOREST_COLORS, DEFOREST_CAUSES, FUELS, normalizeFuel } from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
@@ -212,7 +211,6 @@ Promise.all([
       scatter.highlightCountry(country);
       const iso3 = country === "ALL" ? null : (countryToIso3.get(country) ?? null);
       setDeforestCountryFilter(iso3);
-      setPopulationCountryFilter(iso3);
     }
 
     let conclusionSeeded = false;
