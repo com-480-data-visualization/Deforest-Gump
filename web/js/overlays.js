@@ -286,67 +286,55 @@ function formatPop(n) {
   return String(n);
 }
 
-class PopHeatmapLayer extends L.Layer {
-  
+class PopHeatmapLayer extends CanvasOverlayLayer {
   constructor(geojson, colorScale) {
-    super();
-    this._geojson = geojson;
-    this._color = colorScale;
-    this._layer = null;
-    // const norms = geojson.features.map(f => f.properties.norm);
-    // console.log("min", Math.min(...norms));
-    // console.log("max", Math.max(...norms));
-    // console.log("avg", norms.reduce((a,b)=>a+b,0)/norms.length);
-    
+    super("populationPane", 350, 0.2);
+    this._colorScale = colorScale;
+
+    // Derive cell half-size from the first polygon's bounding box
+    const ring0 = geojson.features[0]?.geometry.coordinates[0] ?? [];
+    const lngs0 = ring0.map((c) => c[0]);
+    const lats0 = ring0.map((c) => c[1]);
+    this._halfLng = (Math.max(...lngs0) - Math.min(...lngs0)) / 2;
+    this._halfLat = (Math.max(...lats0) - Math.min(...lats0)) / 2;
+
+    this._pts = geojson.features.map((f) => {
+      const ring = f.geometry.coordinates[0];
+      const lngs = ring.map((c) => c[0]);
+      const lats = ring.map((c) => c[1]);
+      return {
+        lng: (Math.min(...lngs) + Math.max(...lngs)) / 2,
+        lat: (Math.min(...lats) + Math.max(...lats)) / 2,
+        norm: f.properties.norm ?? 0,
+        cc3: f.properties.cc3,
+      };
+    });
   }
 
-  onAdd(map) {
-    this._map = map;
+  _paint(ctx, map, w, h, nw) {
+    const vb = map.getBounds();
+    const s = vb.getSouth() - this._halfLat;
+    const n = vb.getNorth() + this._halfLat;
+    const we = vb.getWest() - this._halfLng;
+    const e = vb.getEast() + this._halfLng;
 
-    if (!map.getPane("populationPane")) {
-      const pane = map.createPane("populationPane");
-      pane.style.zIndex = "350";
+    ctx.globalAlpha = 0.6;
+    for (const p of this._pts) {
+      if (p.lat < s || p.lat > n || p.lng < we || p.lng > e) continue;
+      if (p.norm < populationThreshold) continue;
+      if (populationCountryIso3 && p.cc3 !== populationCountryIso3) continue;
+
+      const nwPt = map.latLngToLayerPoint([p.lat + this._halfLat, p.lng - this._halfLng]);
+      const sePt = map.latLngToLayerPoint([p.lat - this._halfLat, p.lng + this._halfLng]);
+      ctx.fillStyle = this._colorScale(p.norm);
+      ctx.fillRect(nwPt.x - nw.x, nwPt.y - nw.y,
+        Math.max(1, sePt.x - nwPt.x), Math.max(1, sePt.y - nwPt.y));
     }
-
-    this._layer = L.geoJSON(this._geojson, {
-      pane: "populationPane",
-
-      style: (feature) => {
-        const v = feature.properties.value ?? 0;
-        const norm = feature.properties.norm ?? 0;
-
-        if (norm < populationThreshold) {
-          return { fillOpacity: 0, opacity: 0 };
-        }
-
-        return {
-          fillColor: d3.interpolateInferno(feature.properties.norm),
-          fillOpacity: 0.6,
-          opacity: 0,
-          weight: 0
-        };
-      },
-
-      filter: (feature) => {
-        if (!populationCountryIso3) return true;
-        return feature.properties.cc3 === populationCountryIso3;
-      }
-    }).addTo(map);
-
-    return this;
+    ctx.globalAlpha = 1.0;
   }
-
-  onRemove(map) {
-    if (this._layer) {
-      map.removeLayer(this._layer);
-      this._layer = null;
-    }
-  }
-
 
   redraw() {
-    if (!this._layer) return;
-    this._layer.setStyle(this._layer.options.style);
+    if (this._map) this._draw();
   }
 }
 
