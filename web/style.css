@@ -497,7 +497,16 @@ header.masthead {
   height: 8px;
   border-radius: var(--radius);
   transform: translateY(-50%);
-  background: linear-gradient(to right, #ffffb2, #fecc5c, #fd8d3c, #f03b20, #bd0026);
+  background:linear-gradient(
+    to right,
+    #000004,
+    #1b0c41,
+    #4a0c6b,
+    #781c6d,
+    #b63679,
+    #ed7953,
+    #fcffa4
+  );
   overflow: hidden;
 }
 .pop-gradient-bar::before {

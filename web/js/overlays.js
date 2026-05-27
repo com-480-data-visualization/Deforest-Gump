@@ -261,21 +261,19 @@ let populationGeoJSON = null; // cached so re-toggle skips re-fetch
 let populationThreshold = 0; // norm value [0,1] — hide points below this
 let populationCountryIso3 = null; // ISO alpha-3 string or null for no filter
 
-function normalizeValue(v) {
-  // simple fallback if you didn't precompute norm
-  return Math.min(1, Math.log(v + 1) / 15);
-}
 
 export function setPopulationThreshold(t) {
   populationThreshold = t;
-  if (populationLayer) populationLayer._draw();
+  if (populationLayer) populationLayer.redraw();
 }
 
 export function setPopulationCountryFilter(iso3) {
   populationCountryIso3 = iso3;
-  if (!populationVisible || !populationGeoJSON || !populationMap) return;
-  if (populationLayer) populationMap.removeLayer(populationLayer);
-  buildPopLayerFromData(populationMap, populationGeoJSON);
+
+  if (!populationVisible || !populationLayer) return;
+
+  // just trigger a visual refresh
+  populationLayer.redraw();
 }
 
 const popColorScale = d3.scaleSequential()
@@ -295,10 +293,10 @@ class PopHeatmapLayer extends L.Layer {
     this._geojson = geojson;
     this._color = colorScale;
     this._layer = null;
-    const norms = geojson.features.map(f => f.properties.norm);
-    console.log("min", Math.min(...norms));
-    console.log("max", Math.max(...norms));
-    console.log("avg", norms.reduce((a,b)=>a+b,0)/norms.length);
+    // const norms = geojson.features.map(f => f.properties.norm);
+    // console.log("min", Math.min(...norms));
+    // console.log("max", Math.max(...norms));
+    // console.log("avg", norms.reduce((a,b)=>a+b,0)/norms.length);
     
   }
 
@@ -345,9 +343,10 @@ class PopHeatmapLayer extends L.Layer {
     }
   }
 
-  _redraw() {
+
+  redraw() {
     if (!this._layer) return;
-    this._layer.setStyle(() => ({})); // forces Leaflet refresh
+    this._layer.setStyle(this._layer.options.style);
   }
 }
 
