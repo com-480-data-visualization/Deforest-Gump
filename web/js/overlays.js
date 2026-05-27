@@ -254,18 +254,21 @@ export function buildDeforestToggle(map) {
 
 /* ── Population Overlay ───────────────────────────────────────────────────── */
 
-const popColorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 1]);
-
 let populationMap = null;
 let populationLayer = null;
 let populationVisible = false;
-let populationGeoJSON = null;
-let populationThreshold = 0;
-let populationCountryIso3 = null;
+let populationGeoJSON = null; // cached so re-toggle skips re-fetch
+let populationThreshold = 0; // norm value [0,1] — hide points below this
+let populationCountryIso3 = null; // ISO alpha-3 string or null for no filter
+
+function normalizeValue(v) {
+  // simple fallback if you didn't precompute norm
+  return Math.min(1, Math.log(v + 1) / 15);
+}
 
 export function setPopulationThreshold(t) {
   populationThreshold = t;
-  if (populationLayer) populationLayer._scheduleDraw();
+  if (populationLayer) populationLayer._draw();
 }
 
 export function setPopulationCountryFilter(iso3) {
@@ -275,83 +278,104 @@ export function setPopulationCountryFilter(iso3) {
   buildPopLayerFromData(populationMap, populationGeoJSON);
 }
 
-class PopHeatmapLayer extends CanvasOverlayLayer {
-  constructor(pts) {
-    super("populationPane", 350, 0.1);
-    this._pts = pts;
+const popColorScale = d3.scaleSequential()
+  .domain([0, 1])
+  .interpolator(d3.interpolateInferno);
+
+function formatPop(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + "k";
+  return String(n);
+}
+
+class PopHeatmapLayer extends L.Layer {
+  
+  constructor(geojson, colorScale) {
+    super();
+    this._geojson = geojson;
+    this._color = colorScale;
+    this._layer = null;
+    const norms = geojson.features.map(f => f.properties.norm);
+    console.log("min", Math.min(...norms));
+    console.log("max", Math.max(...norms));
+    console.log("avg", norms.reduce((a,b)=>a+b,0)/norms.length);
+    
   }
 
-  _paint(outCtx, map, w, h, nw) {
-    const zoom = map.getZoom();
-    const radius = Math.max(15, Math.min(40, zoom * 4));
+  onAdd(map) {
+    this._map = map;
 
-    const vb = map.getBounds();
-    const visible = this._pts.filter(
-      (p) =>
-        p.norm >= populationThreshold &&
-        p.lat >= vb.getSouth() - 1 &&
-        p.lat <= vb.getNorth() + 1 &&
-        p.lng >= vb.getWest() - 1 &&
-        p.lng <= vb.getEast() + 1,
-    );
-
-    const MAX = 8000;
-    const step = visible.length > MAX ? Math.ceil(visible.length / MAX) : 1;
-    const pts = step > 1 ? visible.filter((_, i) => i % step === 0) : visible;
-    if (pts.length === 0) return;
-
-    // Pass 1 — accumulate intensity using additive alpha blending on offscreen canvas
-    const off = document.createElement("canvas");
-    off.width = w;
-    off.height = h;
-    const ctx = off.getContext("2d");
-    ctx.globalCompositeOperation = "lighter";
-
-    pts.forEach((p) => {
-      const lp = map.latLngToLayerPoint([p.lat, p.lng]);
-      const x = lp.x - nw.x;
-      const y = lp.y - nw.y;
-      const a = p.norm * 0.5 + 0.05;
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      grad.addColorStop(0, `rgba(0,0,0,${a.toFixed(3)})`);
-      grad.addColorStop(0.4, `rgba(0,0,0,${(a * 0.35).toFixed(3)})`);
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    // Pass 2 — map accumulated alpha → color scale
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const alpha = data[i + 3];
-      if (alpha === 0) continue;
-      const t = Math.min(1, alpha / 255);
-      const c = d3.color(popColorScale(t));
-      data[i] = c.r;
-      data[i + 1] = c.g;
-      data[i + 2] = c.b;
-      data[i + 3] = Math.round(t * 210);
+    if (!map.getPane("populationPane")) {
+      const pane = map.createPane("populationPane");
+      pane.style.zIndex = "350";
     }
-    outCtx.putImageData(imageData, 0, 0);
+
+    this._layer = L.geoJSON(this._geojson, {
+      pane: "populationPane",
+
+      style: (feature) => {
+        const v = feature.properties.value ?? 0;
+        const norm = feature.properties.norm ?? 0;
+
+        if (norm < populationThreshold) {
+          return { fillOpacity: 0, opacity: 0 };
+        }
+
+        return {
+          fillColor: d3.interpolateInferno(feature.properties.norm),
+          fillOpacity: 0.6,
+          opacity: 0,
+          weight: 0
+        };
+      },
+
+      filter: (feature) => {
+        if (!populationCountryIso3) return true;
+        return feature.properties.cc3 === populationCountryIso3;
+      }
+    }).addTo(map);
+
+    return this;
+  }
+
+  onRemove(map) {
+    if (this._layer) {
+      map.removeLayer(this._layer);
+      this._layer = null;
+    }
+  }
+
+  _redraw() {
+    if (!this._layer) return;
+    this._layer.setStyle(() => ({})); // forces Leaflet refresh
   }
 }
 
 function buildPopLayerFromData(map, geojson) {
-  const source = populationCountryIso3
-    ? geojson.features.filter((f) => f.properties.cc3 === populationCountryIso3)
-    : geojson.features;
-
-  const pts = source.map((f) => ({
-    lat: f.geometry.coordinates[1],
-    lng: f.geometry.coordinates[0],
-    norm: f.properties.norm,
-  }));
-
-  populationLayer = new PopHeatmapLayer(pts);
+  populationLayer = new PopHeatmapLayer(geojson, popColorScale);
   populationLayer.addTo(map);
+}
+
+function loadPopulationLayer(map) {
+  if (populationGeoJSON) {
+    buildPopLayerFromData(map, populationGeoJSON);
+    return;
+  }
+  fetch("data/population_grid.geojson")
+    .then((r) => {
+      if (!r.ok) throw new Error(r.statusText);
+      return r.json();
+    })
+    .then((geojson) => {
+      populationGeoJSON = geojson;
+      buildPopLayerFromData(map, geojson);
+    })
+    .catch((err) => {
+      console.warn("Population layer failed to load:", err.message);
+      populationVisible = false;
+      document.getElementById("population-toggle").classList.remove("active");
+      showToast("Failed to load population layer.");
+    });
 }
 
 export function buildPopulationToggle(map) {
@@ -362,22 +386,13 @@ export function buildPopulationToggle(map) {
     btn.classList.toggle("active", populationVisible);
     document.getElementById("population-tool").classList.toggle("hidden", !populationVisible);
     document.getElementById("population-divider").classList.toggle("hidden", !populationVisible);
-    if (!populationVisible) {
+    if (populationVisible) {
+      loadPopulationLayer(map);
+    } else {
       if (populationLayer) {
         map.removeLayer(populationLayer);
         populationLayer = null;
       }
-      return;
     }
-    if (populationGeoJSON) {
-      buildPopLayerFromData(map, populationGeoJSON);
-      return;
-    }
-    loadGeoJSON("data/5-population.geojson", "Population layer", "population-toggle")
-      .then((geojson) => {
-        populationGeoJSON = geojson;
-        buildPopLayerFromData(map, geojson);
-      })
-      .catch(() => { populationVisible = false; });
   });
 }
