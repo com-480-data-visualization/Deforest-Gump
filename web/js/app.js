@@ -245,6 +245,34 @@ Promise.all([
     map.on("moveend", () => { refreshCharts(); refreshDeforestSidebar(); });
     map.fire("moveend");
 
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      map.setView([20, 0], 2);
+
+      document.getElementById("country-select").value = "ALL";
+
+      checkAllChips("#fuel-chips input", "fuel-chip");
+      pieChart?.resetSelection();
+
+      const allDrivers = [];
+      document.querySelectorAll("#driver-chips input").forEach((inp) => {
+        allDrivers.push(+inp.value);
+        if (!inp.checked) {
+          inp.checked = true;
+          inp.closest(".driver-chip").classList.add("checked");
+        }
+      });
+      setDeforestDriverFilter(allDrivers);
+
+      setToggle(plantsBtn, true);
+      setToggle(deforestBtn, true);
+      setToggle(populationBtn, false);
+
+      const slider = document.getElementById("population-slider");
+      if (slider) { slider.value = 0; slider.dispatchEvent(new Event("input")); }
+
+      onFilterChange();
+    });
+
     document.querySelectorAll(".dispatch[data-lat]").forEach((btn) => {
       btn.addEventListener("click", () => {
         checkAllChips("#fuel-chips input", "fuel-chip");
