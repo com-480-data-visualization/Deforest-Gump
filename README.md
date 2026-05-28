@@ -14,6 +14,14 @@
 
 **80% of the final grade**
 
+### Process book
+
+[Process book link](Deforest_Gump.pdf)
+
+### Screencast
+
+[Link to video](Screencast.mp4)
+
 ### Live website
 
 [https://com-480-data-visualization.github.io/Deforest-Gump/](https://com-480-data-visualization.github.io/Deforest-Gump/)
