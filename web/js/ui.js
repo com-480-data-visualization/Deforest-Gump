@@ -12,7 +12,10 @@ import {
 /* ── Toolbar height → CSS variable (keeps map sticky offset correct) ──────── */
 const toolbar = document.getElementById("controls");
 const syncToolbarHeight = () =>
-  document.documentElement.style.setProperty("--toolbar-h", toolbar.offsetHeight + "px");
+  document.documentElement.style.setProperty(
+    "--toolbar-h",
+    toolbar.offsetHeight + "px",
+  );
 syncToolbarHeight();
 new ResizeObserver(syncToolbarHeight).observe(toolbar);
 
@@ -23,21 +26,35 @@ new ResizeObserver(syncToolbarHeight).observe(toolbar);
   let rafId = null;
   const update = () => {
     const h = toolbar.offsetHeight;
-    const overlap = Math.min(h, Math.max(0, h - conclusion.getBoundingClientRect().top));
+    const overlap = Math.min(
+      h,
+      Math.max(0, h - conclusion.getBoundingClientRect().top),
+    );
     toolbar.style.transform = `translateY(${-overlap}px)`;
     toolbar.style.pointerEvents = overlap >= h ? "none" : "";
   };
-  window.addEventListener("scroll", () => {
-    if (rafId) return;
-    rafId = requestAnimationFrame(() => { rafId = null; update(); });
-  }, { passive: true });
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        update();
+      });
+    },
+    { passive: true },
+  );
   update();
 })();
 
 /* ── Driver tool visibility tracks the deforest overlay ──────────────────── */
 document.addEventListener("deforest-toggled", (e) => {
-  document.getElementById("driver-tool").classList.toggle("hidden", !e.detail.active);
-  document.getElementById("driver-divider").classList.toggle("hidden", !e.detail.active);
+  document
+    .getElementById("driver-tool")
+    .classList.toggle("hidden", !e.detail.active);
+  document
+    .getElementById("driver-divider")
+    .classList.toggle("hidden", !e.detail.active);
 });
 
 /* ── Loading + Toast ─────────────────────────────────────────────────────── */
@@ -72,7 +89,9 @@ export function buildFuelChips(onChange) {
 }
 
 export const getActiveFuels = () =>
-  [...document.querySelectorAll("#fuel-chips input:checked")].map((el) => el.value);
+  [...document.querySelectorAll("#fuel-chips input:checked")].map(
+    (el) => el.value,
+  );
 
 export function buildCountrySelect(countries, onChange) {
   const sel = document.getElementById("country-select");
@@ -98,8 +117,16 @@ function renderDetail(plant, nearestDriver) {
   if (!plant) {
     target.innerHTML = `
       <div class="detail-name detail-empty">Hover a marker…</div>
-      ${["Country", "Fuel", "Energy type", "Capacity", "Coordinates", "Nearby deforest."]
-        .map((k) => detailRow(k, EMPTY_VAL)).join("")}`;
+      ${[
+        "Country",
+        "Fuel",
+        "Energy type",
+        "Capacity",
+        "Coordinates",
+        "Nearby deforest.",
+      ]
+        .map((k) => detailRow(k, EMPTY_VAL))
+        .join("")}`;
     return;
   }
   const fuelColor = FUEL_COLORS[normalizeFuel(plant.fuel)];
@@ -120,14 +147,17 @@ function renderDetail(plant, nearestDriver) {
     ${detailRow("Nearby deforest.", nearby)}`;
 }
 
-export const showDetail = (plant, nearestDriver = null) => renderDetail(plant, nearestDriver);
+export const showDetail = (plant, nearestDriver = null) =>
+  renderDetail(plant, nearestDriver);
 export const clearDetail = () => renderDetail(null);
 
 /* ── Stat-bar panels (shared layout for deforest drivers + plant fuels) ──── */
 
 function ensureStatRows(rowsEl, entries, dataKey) {
   if (!rowsEl || rowsEl.querySelector(`[data-${dataKey}]`)) return;
-  rowsEl.innerHTML = entries.map(([key, label, color]) => `
+  rowsEl.innerHTML = entries
+    .map(
+      ([key, label, color]) => `
     <div class="deforest-stat-row" data-${dataKey}="${key}">
       <span class="legend-dot" style="background:${color};flex-shrink:0"></span>
       <span class="deforest-stat-label">${label}</span>
@@ -135,7 +165,9 @@ function ensureStatRows(rowsEl, entries, dataKey) {
         <div class="deforest-stat-bar" style="width:0%;background:${color}"></div>
       </div>
       <span class="deforest-stat-pct">0%</span>
-    </div>`).join("");
+    </div>`,
+    )
+    .join("");
 }
 
 function updateStatRows(rowsEl, entries, dataKey, counts) {
@@ -150,8 +182,11 @@ function updateStatRows(rowsEl, entries, dataKey, counts) {
   });
 }
 
-const DRIVER_ENTRIES = Object.entries(DEFOREST_CAUSES)
-  .map(([id, label]) => [id, label, DEFOREST_COLORS[id]]);
+const DRIVER_ENTRIES = Object.entries(DEFOREST_CAUSES).map(([id, label]) => [
+  id,
+  label,
+  DEFOREST_COLORS[id],
+]);
 const FUEL_ENTRIES = FUELS.map((f) => [f, f, FUEL_COLORS[f]]);
 
 export function showDeforestStats(driverCounts) {
@@ -166,8 +201,12 @@ export function hideDeforestStats() {
   const statsEl = document.getElementById("deforest-stats");
   const rowsEl = document.getElementById("deforest-stats-rows");
   if (!statsEl) return;
-  rowsEl?.querySelectorAll(".deforest-stat-bar").forEach((b) => { b.style.width = "0%"; });
-  rowsEl?.querySelectorAll(".deforest-stat-pct").forEach((el) => { el.textContent = "0%"; });
+  rowsEl?.querySelectorAll(".deforest-stat-bar").forEach((b) => {
+    b.style.width = "0%";
+  });
+  rowsEl?.querySelectorAll(".deforest-stat-pct").forEach((el) => {
+    el.textContent = "0%";
+  });
   statsEl.classList.add("hidden");
 }
 

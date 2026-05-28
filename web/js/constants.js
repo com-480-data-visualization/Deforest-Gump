@@ -1,8 +1,8 @@
 export const FUEL_COLORS = {
   Coal: "#2c2c2c",
   Gas: "#e67e22",
-  Oil: "#8b4513",
-  Hydro: "#2980b9",
+  Oil: "#7a3810",
+  Hydro: "#1565a0",
   Solar: "#f1c40f",
   Wind: "#27ae60",
   Nuclear: "#8e44ad",

@@ -19,9 +19,9 @@
   --ink-4: #b8b3a4;
 
   /* Green brand */
-  --forest: #1c3a2a;   /* decorative: numerals, dropcaps, focus */
+  --forest: #1c3a2a; /* decorative: numerals, dropcaps, focus */
   --forest-2: #2f5d44; /* interactive: chart curve, hover, CTA */
-  --moss: #6b8a6e;     /* hover glyphs only */
+  --moss: #6b8a6e; /* hover glyphs only */
 
   /* Accent */
   --accent: #b04a1a;
@@ -186,7 +186,9 @@ header.masthead {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Toolbar / controls ──────────────────────────────────────────────────── */
@@ -402,8 +404,16 @@ header.masthead {
 }
 #population-toggle .glyph {
   background:
-    radial-gradient(circle at 30% 30%, var(--rule-strong) 0 1.5px, transparent 1.5px),
-    radial-gradient(circle at 70% 70%, var(--rule-strong) 0 1.5px, transparent 1.5px),
+    radial-gradient(
+      circle at 30% 30%,
+      var(--rule-strong) 0 1.5px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      var(--rule-strong) 0 1.5px,
+      transparent 1.5px
+    ),
     var(--surface);
 }
 
@@ -497,7 +507,7 @@ header.masthead {
   height: 8px;
   border-radius: var(--radius);
   transform: translateY(-50%);
-  background:linear-gradient(
+  background: linear-gradient(
     to right,
     #000004,
     #1b0c41,
@@ -622,8 +632,14 @@ main {
   opacity: 0;
 }
 @keyframes pulse {
-  0%   { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 /* ── Side panel ──────────────────────────────────────────────────────────── */
@@ -759,6 +775,9 @@ main {
   text-transform: uppercase;
   font-weight: 500;
 }
+#fossil-forest-card svg .axis-label {
+  font-size: 7px;
+}
 .chart-hint {
   font-size: 10.5px;
   color: var(--ink-3);
@@ -819,10 +838,20 @@ main {
   animation: fadeInOut 4s ease forwards;
 }
 @keyframes fadeInOut {
-  0%  { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  80% { opacity: 1; }
-  100%{ opacity: 0; }
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
@@ -916,13 +945,17 @@ main {
   letter-spacing: -0.02em;
   color: var(--ink);
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 30, "WONK" 0;
+  font-variation-settings:
+    "SOFT" 30,
+    "WONK" 0;
 }
 .article-headline em {
   font-style: normal;
   font-weight: 500;
   color: var(--forest);
-  font-variation-settings: "SOFT" 50, "WONK" 1;
+  font-variation-settings:
+    "SOFT" 50,
+    "WONK" 1;
 }
 .article-deck {
   font-family: var(--headline);
@@ -934,7 +967,9 @@ main {
   max-width: 60ch;
   margin: 0 auto;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 40, "WONK" 0;
+  font-variation-settings:
+    "SOFT" 40,
+    "WONK" 0;
 }
 
 /* ── Article body — three-column newspaper ───────────────────────────────── */
@@ -981,7 +1016,9 @@ main {
   color: var(--forest);
   text-indent: 0;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 50, "WONK" 1;
+  font-variation-settings:
+    "SOFT" 50,
+    "WONK" 1;
 }
 .article-body .pullquote::before {
   content: "\201C";
@@ -1148,7 +1185,9 @@ main {
   color: var(--forest-2);
   opacity: 0;
   transform: translateX(-4px);
-  transition: opacity 0.2s, transform 0.2s;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
 .dispatch:hover .dispatch-cta {
   opacity: 1;

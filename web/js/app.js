@@ -20,7 +20,12 @@ import {
   setDeforestCountryFilter,
   setPopulationThreshold,
 } from "./overlays.js";
-import { DEFOREST_COLORS, DEFOREST_CAUSES, FUELS, normalizeFuel } from "./constants.js";
+import {
+  DEFOREST_COLORS,
+  DEFOREST_CAUSES,
+  FUELS,
+  normalizeFuel,
+} from "./constants.js";
 import { buildMarkers, applyFilters } from "./map.js";
 import {
   CapacityTreemap,
@@ -89,12 +94,20 @@ Promise.all([
 
     buildCountrySelect(countries, onFilterChange);
     let pieChart;
-    buildFuelChips(() => { pieChart?.resetSelection(); onFilterChange(); });
-    buildDriverChips(() => { refreshDeforestSidebar(); refreshCharts(); });
+    buildFuelChips(() => {
+      pieChart?.resetSelection();
+      onFilterChange();
+    });
+    buildDriverChips(() => {
+      refreshDeforestSidebar();
+      refreshCharts();
+    });
     buildPopSlider();
 
     const { markers, group: plantsGroup } = buildMarkers(
-      map, data, renderer,
+      map,
+      data,
+      renderer,
       (lat, lng) => getNearestDeforestDriver(lat, lng),
     );
 
@@ -137,8 +150,12 @@ Promise.all([
       else map.removeLayer(plantsGroup);
     });
 
-    map.on("zoomstart", () => { plantsPane.style.visibility = "hidden"; });
-    map.on("zoomend", () => { if (plantsVisible) plantsPane.style.visibility = ""; });
+    map.on("zoomstart", () => {
+      plantsPane.style.visibility = "hidden";
+    });
+    map.on("zoomend", () => {
+      if (plantsVisible) plantsPane.style.visibility = "";
+    });
 
     pieChart = new CapacityTreemap("plot-3", data, (fuel) => {
       document.querySelectorAll("#fuel-chips input").forEach((inp) => {
@@ -153,11 +170,17 @@ Promise.all([
     const topDeforestChart = new TopDeforestCountries("plot-8", iso3ToCountry);
     const conclusionScatter = new ConclusionScatter("plot-11", correlationData);
 
-    const scatter = new CorrelationScatter("plot-4", correlationData, (countryName) => {
-      const sel = document.getElementById("country-select");
-      sel.value = [...sel.options].some((o) => o.value === countryName) ? countryName : "ALL";
-      onFilterChange();
-    });
+    const scatter = new CorrelationScatter(
+      "plot-4",
+      correlationData,
+      (countryName) => {
+        const sel = document.getElementById("country-select");
+        sel.value = [...sel.options].some((o) => o.value === countryName)
+          ? countryName
+          : "ALL";
+        onFilterChange();
+      },
+    );
 
     const getViewArgs = () => {
       const b = map.getBounds();
@@ -165,7 +188,11 @@ Promise.all([
     };
 
     const getActiveDrivers = () =>
-      new Set([...document.querySelectorAll("#driver-chips input:checked")].map((el) => +el.value));
+      new Set(
+        [...document.querySelectorAll("#driver-chips input:checked")].map(
+          (el) => +el.value,
+        ),
+      );
 
     const filterByActiveDrivers = (counts) => {
       const active = getActiveDrivers();
@@ -180,14 +207,20 @@ Promise.all([
       const [s, n, w, e] = getViewArgs();
       pieChart.update(s, n, w, e, fuels, country);
 
-      const visiblePlants = data.filter((d) =>
-        d.lat >= s && d.lat <= n && d.lng >= w && d.lng <= e &&
-        (country === "ALL" || d.country === country) &&
-        fuels.includes(normalizeFuel(d.fuel))
+      const visiblePlants = data.filter(
+        (d) =>
+          d.lat >= s &&
+          d.lat <= n &&
+          d.lng >= w &&
+          d.lng <= e &&
+          (country === "ALL" || d.country === country) &&
+          fuels.includes(normalizeFuel(d.fuel)),
       );
 
       const counts = Object.fromEntries(FUELS.map((f) => [f, 0]));
-      visiblePlants.forEach((d) => { counts[normalizeFuel(d.fuel)]++; });
+      visiblePlants.forEach((d) => {
+        counts[normalizeFuel(d.fuel)]++;
+      });
       showPlantStats(counts);
 
       const deforestByIso3 = getDeforestStatsByCountry(s, n, w, e);
@@ -209,7 +242,8 @@ Promise.all([
       applyFilters(markers, fuels, country);
       refreshCharts();
       scatter.highlightCountry(country);
-      const iso3 = country === "ALL" ? null : (countryToIso3.get(country) ?? null);
+      const iso3 =
+        country === "ALL" ? null : (countryToIso3.get(country) ?? null);
       setDeforestCountryFilter(iso3);
     }
 
@@ -240,7 +274,10 @@ Promise.all([
       }
     });
 
-    map.on("moveend", () => { refreshCharts(); refreshDeforestSidebar(); });
+    map.on("moveend", () => {
+      refreshCharts();
+      refreshDeforestSidebar();
+    });
     map.fire("moveend");
 
     document.getElementById("reset-btn").addEventListener("click", () => {
@@ -266,7 +303,10 @@ Promise.all([
       setToggle(populationBtn, false);
 
       const slider = document.getElementById("population-slider");
-      if (slider) { slider.value = 0; slider.dispatchEvent(new Event("input")); }
+      if (slider) {
+        slider.value = 0;
+        slider.dispatchEvent(new Event("input"));
+      }
 
       onFilterChange();
     });
@@ -275,11 +315,14 @@ Promise.all([
       btn.addEventListener("click", () => {
         checkAllChips("#fuel-chips input", "fuel-chip");
         const allDrivers = [];
-        document.querySelectorAll("#driver-chips input").forEach((inp) => allDrivers.push(+inp.value));
+        document
+          .querySelectorAll("#driver-chips input")
+          .forEach((inp) => allDrivers.push(+inp.value));
         checkAllChips("#driver-chips input", "driver-chip");
         setDeforestDriverFilter(allDrivers);
 
-        document.getElementById("country-select").value = btn.dataset.country || "ALL";
+        document.getElementById("country-select").value =
+          btn.dataset.country || "ALL";
         onFilterChange();
 
         const overlays = btn.dataset.overlays
@@ -289,8 +332,12 @@ Promise.all([
         setToggle(deforestBtn, overlays.includes("deforest"));
         setToggle(populationBtn, overlays.includes("population"));
 
-        document.querySelector(".top-row").scrollIntoView({ behavior: "smooth" });
-        map.flyTo([+btn.dataset.lat, +btn.dataset.lng], +btn.dataset.zoom, { duration: 1.5 });
+        document
+          .querySelector(".top-row")
+          .scrollIntoView({ behavior: "smooth" });
+        map.flyTo([+btn.dataset.lat, +btn.dataset.lng], +btn.dataset.zoom, {
+          duration: 1.5,
+        });
       });
     });
   })
@@ -308,7 +355,9 @@ function buildDriverChips(onDriverChange) {
       ${label.split(" ")[0]}`;
     chip.querySelector("input").addEventListener("change", (e) => {
       chip.classList.toggle("checked", e.target.checked);
-      const active = [...document.querySelectorAll("#driver-chips input:checked")].map((el) => +el.value);
+      const active = [
+        ...document.querySelectorAll("#driver-chips input:checked"),
+      ].map((el) => +el.value);
       setDeforestDriverFilter(active);
       onDriverChange?.();
     });

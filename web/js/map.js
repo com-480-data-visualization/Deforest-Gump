@@ -19,12 +19,16 @@ export function buildMarkers(map, data, renderer, getNearest = null) {
     });
     const isVisible = () => m.options.opacity > 0;
     m.on("click", () => {
-      if (isVisible()) showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
+      if (isVisible())
+        showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
     });
     m.on("mouseover", () => {
-      if (isVisible()) showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
+      if (isVisible())
+        showDetail(d, getNearest ? getNearest(d.lat, d.lng) : null);
     });
-    m.on("mouseout", () => { if (isVisible()) clearDetail(); });
+    m.on("mouseout", () => {
+      if (isVisible()) clearDetail();
+    });
     m.plantData = d;
     m.addTo(group);
     markers.push(m);

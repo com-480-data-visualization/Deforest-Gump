@@ -13,10 +13,15 @@ class CanvasOverlayLayer extends L.Layer {
     this._padBounds = padBounds;
     this._rafId = null;
     this._draw = this._draw.bind(this);
-    this._hide = () => { this._canvas.style.display = "none"; };
+    this._hide = () => {
+      this._canvas.style.display = "none";
+    };
     this._scheduleDraw = () => {
       if (this._rafId) cancelAnimationFrame(this._rafId);
-      this._rafId = requestAnimationFrame(() => { this._rafId = null; this._draw(); });
+      this._rafId = requestAnimationFrame(() => {
+        this._rafId = null;
+        this._draw();
+      });
     };
   }
 
@@ -149,7 +154,10 @@ export function getDefinitiveDeforestPctByCountry() {
     if (d === 1 || d === 2 || d === 5) c.def++;
   }
   _definitiveDeforestCache = new Map(
-    [...totals].map(([iso3, c]) => [iso3, c.total > 0 ? (c.def / c.total) * 100 : 0]),
+    [...totals].map(([iso3, c]) => [
+      iso3,
+      c.total > 0 ? (c.def / c.total) * 100 : 0,
+    ]),
   );
   return _definitiveDeforestCache;
 }
@@ -191,10 +199,20 @@ class DeforestCanvasLayer extends CanvasOverlayLayer {
     for (const [driver, pts] of Object.entries(byDriver)) {
       ctx.fillStyle = (DEFOREST_COLORS[driver] ?? "#ccc") + "aa";
       for (const p of pts) {
-        const nwPt = map.latLngToLayerPoint([p.lat + CELL_HALF, p.lng - CELL_HALF]);
-        const sePt = map.latLngToLayerPoint([p.lat - CELL_HALF, p.lng + CELL_HALF]);
-        ctx.fillRect(nwPt.x - nw.x, nwPt.y - nw.y,
-          Math.max(1, sePt.x - nwPt.x), Math.max(1, sePt.y - nwPt.y));
+        const nwPt = map.latLngToLayerPoint([
+          p.lat + CELL_HALF,
+          p.lng - CELL_HALF,
+        ]);
+        const sePt = map.latLngToLayerPoint([
+          p.lat - CELL_HALF,
+          p.lng + CELL_HALF,
+        ]);
+        ctx.fillRect(
+          nwPt.x - nw.x,
+          nwPt.y - nw.y,
+          Math.max(1, sePt.x - nwPt.x),
+          Math.max(1, sePt.y - nwPt.y),
+        );
       }
     }
   }
@@ -207,9 +225,12 @@ function buildDeforestLayerFromData(map, geojson) {
 
   deforestFeatures = bboxFiltered;
 
-  const visible = deforestActiveDrivers.size === ALL_DRIVERS.length
-    ? bboxFiltered
-    : bboxFiltered.filter((f) => deforestActiveDrivers.has(f.properties.driver));
+  const visible =
+    deforestActiveDrivers.size === ALL_DRIVERS.length
+      ? bboxFiltered
+      : bboxFiltered.filter((f) =>
+          deforestActiveDrivers.has(f.properties.driver),
+        );
 
   const pts = visible.map((f) => ({
     lng: f.geometry.coordinates[0],
@@ -236,19 +257,27 @@ export function buildDeforestToggle(map) {
         map.removeLayer(deforestLayer);
         deforestLayer = null;
       }
-      document.dispatchEvent(new CustomEvent("deforest-toggled", { detail: { active: false } }));
+      document.dispatchEvent(
+        new CustomEvent("deforest-toggled", { detail: { active: false } }),
+      );
       return;
     }
     if (deforestGeoJSON) {
       buildDeforestLayerFromData(map, deforestGeoJSON);
       return;
     }
-    loadGeoJSON("data/8-deforestation.geojson", "Deforestation layer", "deforest-toggle")
+    loadGeoJSON(
+      "data/8-deforestation.geojson",
+      "Deforestation layer",
+      "deforest-toggle",
+    )
       .then((geojson) => {
         deforestGeoJSON = geojson;
         buildDeforestLayerFromData(map, geojson);
       })
-      .catch(() => { deforestVisible = false; });
+      .catch(() => {
+        deforestVisible = false;
+      });
   });
 }
 
@@ -265,7 +294,8 @@ export function setPopulationThreshold(t) {
   if (populationLayer) populationLayer.redraw();
 }
 
-const popColorScale = d3.scaleSequential()
+const popColorScale = d3
+  .scaleSequential()
   .domain([0, 1])
   .interpolator(d3.interpolateInferno);
 
@@ -312,11 +342,21 @@ class PopHeatmapLayer extends CanvasOverlayLayer {
       if (p.lat < s || p.lat > n || p.lng < we || p.lng > e) continue;
       if (p.norm < populationThreshold) continue;
 
-      const nwPt = map.latLngToLayerPoint([p.lat + this._halfLat, p.lng - this._halfLng]);
-      const sePt = map.latLngToLayerPoint([p.lat - this._halfLat, p.lng + this._halfLng]);
+      const nwPt = map.latLngToLayerPoint([
+        p.lat + this._halfLat,
+        p.lng - this._halfLng,
+      ]);
+      const sePt = map.latLngToLayerPoint([
+        p.lat - this._halfLat,
+        p.lng + this._halfLng,
+      ]);
       ctx.fillStyle = this._colorScale(p.norm);
-      ctx.fillRect(nwPt.x - nw.x, nwPt.y - nw.y,
-        Math.max(1, sePt.x - nwPt.x), Math.max(1, sePt.y - nwPt.y));
+      ctx.fillRect(
+        nwPt.x - nw.x,
+        nwPt.y - nw.y,
+        Math.max(1, sePt.x - nwPt.x),
+        Math.max(1, sePt.y - nwPt.y),
+      );
     }
     ctx.globalAlpha = 1.0;
   }
@@ -359,8 +399,12 @@ export function buildPopulationToggle(map) {
   btn.addEventListener("click", () => {
     populationVisible = !populationVisible;
     btn.classList.toggle("active", populationVisible);
-    document.getElementById("population-tool").classList.toggle("hidden", !populationVisible);
-    document.getElementById("population-divider").classList.toggle("hidden", !populationVisible);
+    document
+      .getElementById("population-tool")
+      .classList.toggle("hidden", !populationVisible);
+    document
+      .getElementById("population-divider")
+      .classList.toggle("hidden", !populationVisible);
     if (populationVisible) {
       loadPopulationLayer(map);
     } else {
