@@ -1,18 +1,18 @@
 # Deforest Gump — COM-480 Data Visualization
 
-| Student | SCIPER |
-|---------|--------|
-| Oliver Daoud | 356765 |
+| Student          | SCIPER |
+| ---------------- | ------ |
+| Oliver Daoud     | 356765 |
 | Phuc-hung Truong | 345674 |
-| Simon Barras | 385883 |
+| Simon Barras     | 385883 |
 
-[Milestone 1](#milestone-1) • [Milestone 2](#milestone-2) • [Milestone 3](#milestone-3)
+[Milestone 1](#milestone-1-20th-march-5pm) • [Milestone 2](#milestone-2-17th-april-5pm) • [Milestone 3](#milestone-3-29th-may-5pm)
 
 ---
 
 ## Milestone 3 (29th May, 5pm)
 
-**80% of the final grade**
+**80% of the final grade**#
 
 ### Process book
 
@@ -28,7 +28,7 @@
 
 ### What it shows
 
-*Where energy meets the forest.* Fossil fuel power plants and deforestation are deeply connected — this visualization makes that link visible.
+_Where energy meets the forest._ Fossil fuel power plants and deforestation are deeply connected — this visualization makes that link visible.
 
 The site combines three datasets across 148 countries:
 
@@ -38,17 +38,17 @@ The site combines three datasets across 148 countries:
 
 Four linked views tell the story together:
 
-| View | What it shows |
-|------|--------------|
-| **Interactive map** | Power plant locations + optional deforestation / population overlays |
-| **Bar charts** | Average capacity and plant count by fuel type — update as you pan/zoom |
-| **Capacity pie chart** | Share of total installed MW by fuel, live for the current view |
+| View                    | What it shows                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| **Interactive map**     | Power plant locations + optional deforestation / population overlays                 |
+| **Bar charts**          | Average capacity and plant count by fuel type — update as you pan/zoom               |
+| **Capacity pie chart**  | Share of total installed MW by fuel, live for the current view                       |
 | **Correlation scatter** | Fossil fuel % vs deforestation intensity per country — click a dot to filter the map |
 
 ### How to use
 
 1. **Browse power plants** — use the fuel-type chips or the country dropdown to filter markers on the map
-2. **Enable overlays** — toggle *Deforestation* or *Population* to layer additional data; the sidebar shows a live driver breakdown for the current map view
+2. **Enable overlays** — toggle _Deforestation_ or _Population_ to layer additional data; the sidebar shows a live driver breakdown for the current map view
 3. **Spot the pattern** — check the scatter chart (bottom right) to see which countries combine heavy fossil fuel dependency with high deforestation pressure; click any dot to zoom in
 
 ### Technical setup
@@ -119,11 +119,11 @@ Deforest-Gump/
 
 ### Data sources
 
-| Dataset | Source | Licence |
-|---------|--------|---------|
-| Global Power Plant Database | [WRI / Global Energy Observatory](https://datasets.wri.org/dataset/globalpowerplantdatabase) | CC BY 4.0 |
-| Deforestation drivers 2001–2019 | [Global Forest Watch / Curtis et al. 2018](https://www.globalforestwatch.org/) | CC BY 4.0 |
-| Gridded Population of the World | [EC JRC / CIESIN](https://sedac.ciesin.columbia.edu/data/collection/gpw-v4) | CC BY 4.0 |
+| Dataset                         | Source                                                                                       | Licence   |
+| ------------------------------- | -------------------------------------------------------------------------------------------- | --------- |
+| Global Power Plant Database     | [WRI / Global Energy Observatory](https://datasets.wri.org/dataset/globalpowerplantdatabase) | CC BY 4.0 |
+| Deforestation drivers 2001–2019 | [Global Forest Watch / Curtis et al. 2018](https://www.globalforestwatch.org/)               | CC BY 4.0 |
+| Gridded Population of the World | [EC JRC / CIESIN](https://sedac.ciesin.columbia.edu/data/collection/gpw-v4)                  | CC BY 4.0 |
 
 All three datasets are available via the [Kaggle "Geospatial Environmental and Socioeconomic Data"](https://www.kaggle.com/datasets/cathetorres/geospatial-environmental-and-socioeconomic-data) collection.
 
