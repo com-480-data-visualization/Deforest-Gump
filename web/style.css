@@ -287,6 +287,9 @@ header.masthead {
   border-radius: 50%;
   flex-shrink: 0;
 }
+.driver-chip .chip-dot {
+  border-radius: 2px;
+}
 .fuel-chip:hover,
 .driver-chip:hover {
   border-color: var(--rule-strong);
